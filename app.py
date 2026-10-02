@@ -270,7 +270,7 @@ col_sb1, col_sb2 = st.sidebar.columns([3, 2])
 with col_sb1:
     generate_btn = st.button("✨ Generate Plan", type="primary", use_container_width=True)
 with col_sb2:
-    if st.button("🔄 Reset", kind="secondary", use_container_width=True):
+    if st.button("🔄 Reset", type="secondary", use_container_width=True):
         st.session_state.meal_plan = None
         st.rerun()
 
@@ -387,7 +387,7 @@ if st.session_state.meal_plan:
             # Single Day Regeneration Button
             col_re1, col_re2 = st.columns([1, 4])
             with col_re1:
-                if st.button(f"🔄 Regenerate {day_label}", key=f"tab_regen_{idx}", kind="secondary", use_container_width=True):
+                if st.button(f"🔄 Regenerate {day_label}", key=f"tab_regen_{idx}", type="secondary", use_container_width=True):
                     with st.spinner(f"Re-rolling {day_label} for {friend_name}..."):
                         new_day = planner.regenerate_single_day(
                             allergies=allergies_list,
