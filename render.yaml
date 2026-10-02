@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: allergy-meal-planner
+    env: docker
+    plan: standard
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: OLLAMA_MODEL
+        value: gemma3:1b
+      - key: PORT
+        value: 8501
