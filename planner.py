@@ -199,7 +199,7 @@ def generate_smart_fallback_meal_plan(allergies: List[str], preferences: str, da
     sanitized["shopping_list"] = clean_and_deduplicate_shopping_list(raw_ing)
     return sanitized
 
-def generate_meal_plan(allergies: List[str], preferences: str, days: int = 7, model_name: str = None) -> Dict[str, Any]:
+def generate_meal_plan(allergies: List[str], preferences: str, days: int = 7, model_name: str = None, temperature: float = 0.3) -> Dict[str, Any]:
     """
     Generate an allergy-safe meal plan using local Ollama model if active,
     or smart cloud generator fallback when deployed on Render / cloud host.
@@ -212,7 +212,6 @@ def generate_meal_plan(allergies: List[str], preferences: str, days: int = 7, mo
         if available:
             model_name = available[0]
         else:
-            # Fallback to smart engine if no Ollama daemon is listening
             return generate_smart_fallback_meal_plan(allergies, preferences, days)
 
     allergies_str = ", ".join(allergies) if allergies else "None"
@@ -261,17 +260,16 @@ Generate {days} distinct days now. Do not include markdown code block ticks or e
             model=model_name,
             prompt=prompt,
             format="json",
-            options={"temperature": 0.3}
+            options={"temperature": float(temperature)}
         )
         raw_output = response.get("response", "")
         plan = parse_and_validate_json(raw_output)
         return verify_allergen_safety(plan, allergies)
 
     except Exception:
-        # If Ollama daemon is unreachable on cloud or fails, use smart cloud engine
         return generate_smart_fallback_meal_plan(allergies, preferences, days)
 
-def regenerate_single_day(allergies: List[str], preferences: str, day_label: str, model_name: str = None) -> Dict[str, Any]:
+def regenerate_single_day(allergies: List[str], preferences: str, day_label: str, model_name: str = None, temperature: float = 0.5) -> Dict[str, Any]:
     """Regenerate breakfast, lunch, and dinner for a single target day."""
     if not OLLAMA_INSTALLED:
         fallback_plan = generate_smart_fallback_meal_plan(allergies, preferences, 1)
@@ -316,7 +314,12 @@ Respond ONLY with valid raw JSON for {day_label}:
 }}
 """
     try:
-        res = ollama.generate(model=model_name, prompt=prompt, format="json", options={"temperature": 0.5})
+        res = ollama.generate(
+            model=model_name, 
+            prompt=prompt, 
+            format="json", 
+            options={"temperature": float(temperature)}
+        )
         raw = clean_json_text(res.get("response", ""))
         day_data = json.loads(raw)
         day_data["day"] = day_label

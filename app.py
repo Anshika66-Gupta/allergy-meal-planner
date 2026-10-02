@@ -1,9 +1,10 @@
 """
-app.py - Clean & Friendly Streamlit UI for Allergy-Safe Meal Planner
+app.py - Premium Classy & Modern Streamlit UI for Allergy-Safe Meal Planner
 """
 
 import streamlit as st
 import planner
+import json
 
 # Streamlit Page Config
 st.set_page_config(
@@ -13,64 +14,184 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Custom Styling
+# Custom Classy Glassmorphism & Gradient CSS Styling
 st.markdown("""
 <style>
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+    
+    /* Main Background & Typography */
     .stApp {
-        background-color: #0F172A;
+        background: linear-gradient(135deg, #090D16 0%, #0F172A 40%, #1E1B4B 100%);
         color: #F8FAFC;
         font-family: 'Inter', system-ui, -apple-system, sans-serif;
     }
-    .header-box {
-        background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
-        border: 1px solid #334155;
-        border-radius: 12px;
-        padding: 24px;
-        margin-bottom: 24px;
+    
+    h1, h2, h3, h4, .gradient-title {
+        font-family: 'Outfit', sans-serif !important;
     }
-    .welcome-msg {
-        background-color: #064E3B;
+
+    /* Gradient Title */
+    .gradient-title {
+        background: linear-gradient(90deg, #C084FC 0%, #F472B6 50%, #38BDF8 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-size: 2.6rem;
+        font-weight: 800;
+        margin: 0;
+        letter-spacing: -0.02em;
+    }
+
+    /* Glassmorphic Cards */
+    .glass-header {
+        background: rgba(30, 41, 59, 0.45);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        padding: 28px 32px;
+        margin-bottom: 28px;
+        box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.4);
+    }
+    
+    .glass-card {
+        background: rgba(15, 23, 42, 0.65);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 18px;
+        padding: 22px;
+        margin-bottom: 20px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .meal-box-glass {
+        background: rgba(30, 41, 59, 0.5);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 20px;
+        height: 100%;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    .meal-box-glass:hover {
+        transform: translateY(-5px);
+        border-color: rgba(192, 132, 252, 0.4);
+        box-shadow: 0 14px 30px -10px rgba(168, 85, 247, 0.25);
+    }
+
+    /* Welcome Banner */
+    .welcome-banner {
+        background: linear-gradient(90deg, rgba(6, 78, 59, 0.8) 0%, rgba(15, 118, 110, 0.6) 100%);
         color: #34D399;
-        border: 1px solid #059669;
-        padding: 10px 16px;
-        border-radius: 8px;
-        font-size: 1rem;
+        border: 1px solid rgba(52, 211, 153, 0.3);
+        padding: 12px 18px;
+        border-radius: 12px;
+        font-size: 1.05rem;
         font-weight: 600;
-        margin-top: 12px;
-        display: block;
+        margin-top: 14px;
+        box-shadow: 0 4px 12px rgba(6, 78, 59, 0.2);
     }
-    .badge-tag {
-        background-color: #450A0A;
+
+    /* Badges */
+    .badge-allergy {
+        background: rgba(153, 27, 27, 0.4);
         color: #FCA5A5;
-        border: 1px solid #991B1B;
-        padding: 4px 10px;
-        border-radius: 8px;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        padding: 5px 12px;
+        border-radius: 10px;
         font-size: 0.85rem;
         font-weight: 600;
-        margin-right: 6px;
+        margin-right: 8px;
+        margin-bottom: 8px;
         display: inline-block;
     }
-    .badge-offline {
-        background-color: #064E3B;
+
+    .badge-status {
+        background: rgba(6, 78, 59, 0.6);
         color: #34D399;
-        border: 1px solid #059669;
-        padding: 4px 10px;
-        border-radius: 8px;
+        border: 1px solid rgba(16, 185, 129, 0.4);
+        padding: 6px 14px;
+        border-radius: 20px;
         font-size: 0.85rem;
         font-weight: 600;
         float: right;
     }
-    .meal-box {
-        background-color: #1E293B;
-        border-radius: 10px;
-        padding: 16px;
-        height: 100%;
-        border-left: 4px solid #3B82F6;
-        margin-bottom: 12px;
+
+    /* Meal Type Badges */
+    .meal-type-tag {
+        font-size: 0.75rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 4px 10px;
+        border-radius: 8px;
+        display: inline-block;
+        margin-bottom: 10px;
     }
-    .meal-box.breakfast { border-left-color: #F59E0B; }
-    .meal-box.lunch { border-left-color: #10B981; }
-    .meal-box.dinner { border-left-color: #6366F1; }
+    .breakfast-tag { background: rgba(245, 158, 11, 0.2); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .lunch-tag { background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .dinner-tag { background: rgba(99, 102, 241, 0.2); color: #818CF8; border: 1px solid rgba(99, 102, 241, 0.3); }
+
+    /* Custom Streamlit Elements */
+    section[data-testid="stSidebar"] {
+        background-color: #070B14 !important;
+        border-right: 1px solid rgba(255, 255, 255, 0.08) !important;
+    }
+    
+    /* Interactive Tabs Override */
+    button[data-baseweb="tab"] {
+        background: rgba(30, 41, 59, 0.3) !important;
+        border-radius: 12px !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+        color: #94A3B8 !important;
+        font-weight: 600 !important;
+        padding: 10px 20px !important;
+        margin-right: 6px !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    button[data-baseweb="tab"][aria-selected="true"] {
+        background: linear-gradient(135deg, #7C3AED 0%, #C084FC 100%) !important;
+        color: #FFFFFF !important;
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(124, 58, 237, 0.4) !important;
+    }
+
+    /* Primary Button Styling with Hover Scale */
+    div.stButton > button[kind="primary"] {
+        background: linear-gradient(135deg, #7C3AED 0%, #A855F7 100%) !important;
+        color: #FFFFFF !important;
+        border: none !important;
+        border-radius: 12px !important;
+        font-weight: 700 !important;
+        padding: 12px 24px !important;
+        box-shadow: 0 8px 20px -6px rgba(124, 58, 237, 0.5) !important;
+        transition: all 0.25s ease !important;
+    }
+
+    div.stButton > button[kind="primary"]:hover {
+        transform: scale(1.02) translateY(-2px) !important;
+        box-shadow: 0 12px 25px -4px rgba(168, 85, 247, 0.6) !important;
+    }
+
+    /* Secondary Button Styling */
+    div.stButton > button[kind="secondary"] {
+        background: rgba(30, 41, 59, 0.6) !important;
+        color: #E2E8F0 !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-radius: 10px !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    div.stButton > button[kind="secondary"]:hover {
+        background: rgba(51, 65, 85, 0.8) !important;
+        border-color: rgba(192, 132, 252, 0.4) !important;
+        color: #FFFFFF !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -78,18 +199,17 @@ st.markdown("""
 if "meal_plan" not in st.session_state:
     st.session_state.meal_plan = None
 
-# Sidebar Controls pre-configured for Anny
-st.sidebar.title("👤 Friend & Diet Setup")
+# Sidebar Setup & Controls
+st.sidebar.markdown("## ⚙️ Configuration")
 
 friend_name = st.sidebar.text_input(
     "Friend's Name", 
     value=planner.DEFAULT_FRIEND["name"]
 )
 
-# Multiselect presets + custom text input
 allergy_presets = ["Peanuts", "Tree Nuts", "Shellfish", "Dairy", "Gluten", "Eggs", "Soy"]
 selected_allergies = st.sidebar.multiselect(
-    "Select Allergies",
+    "Select Severe Allergies",
     options=allergy_presets,
     default=planner.DEFAULT_FRIEND["allergies"]
 )
@@ -110,7 +230,7 @@ if custom_allergies_text:
 preferences = st.sidebar.text_area(
     "Dietary Preferences",
     value=planner.DEFAULT_FRIEND["preferences"],
-    height=100
+    height=90
 )
 
 num_days = st.sidebar.slider(
@@ -120,137 +240,201 @@ num_days = st.sidebar.slider(
     value=planner.DEFAULT_FRIEND["days"]
 )
 
-# Model / Engine selector
+# Advanced AI Settings
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🤖 Model Settings")
+
+# Model options: includes gemma4 models as requested + installed models
 available_models = planner.get_available_models()
-if available_models:
-    selected_model = st.sidebar.selectbox("Model Engine", options=available_models, index=0)
+default_model_options = ["gemma3:1b", "gemma4:e4b", "gemma4:e2b", "gemma2:2b", "mistral:latest"]
+model_options = list(dict.fromkeys(available_models + default_model_options))
+
+selected_model = st.sidebar.selectbox(
+    "Ollama Model", 
+    options=model_options,
+    index=0
+)
+
+temperature = st.sidebar.slider(
+    "Temperature (Creativity)",
+    min_value=0.0,
+    max_value=1.0,
+    value=0.3,
+    step=0.05,
+    help="Lower values yield consistent, strict outputs. Higher values yield creative recipes."
+)
+
+st.sidebar.markdown("---")
+
+col_sb1, col_sb2 = st.sidebar.columns([3, 2])
+with col_sb1:
+    generate_btn = st.button("✨ Generate Plan", type="primary", use_container_width=True)
+with col_sb2:
+    if st.button("🔄 Reset", kind="secondary", use_container_width=True):
+        st.session_state.meal_plan = None
+        st.rerun()
+
+# Status & Badge logic
+if available_models and selected_model in available_models:
     badge_label = f"🟢 Local Gemma ({selected_model})"
 else:
-    selected_model = "gemma3:1b"
-    st.sidebar.info("🟢 Allergy Guard Engine (Cloud Mode)")
     badge_label = "🟢 100% Safe (Cloud Mode)"
 
-# Big Generate Plan Button
-generate_btn = st.sidebar.button("✨ Generate Plan", type="primary", use_container_width=True)
-
-# Allergies String for Welcome Message
 allergies_text_str = ", ".join(allergies_list) if allergies_list else "allergies"
 
-# Personal Header with Welcome Message
+# Glassmorphic Header Banner
 st.markdown(f"""
-<div class="header-box">
-    <span class="badge-offline">{badge_label}</span>
-    <h1 style="margin: 0; color: #F8FAFC;">🥗 Meal Planner for {friend_name}</h1>
-    <div class="welcome-msg">
+<div class="glass-header">
+    <span class="badge-status">{badge_label}</span>
+    <h1 class="gradient-title">🥗 Meal Planner for {friend_name}</h1>
+    <div class="welcome-banner">
         ❤️ Built especially for {friend_name} so you never have to worry about {allergies_text_str} again.
     </div>
-    <div style="margin-top: 14px;">
-        <strong>Strict Exclusions:</strong> 
-        {' '.join([f'<span class="badge-tag">🚫 {a}</span>' for a in allergies_list]) if allergies_list else '<span>None</span>'}
+    <div style="margin-top: 16px;">
+        <span style="font-size: 0.9rem; color: #94A3B8; font-weight: 600; margin-right: 10px;">Strict Exclusions:</span>
+        {' '.join([f'<span class="badge-allergy">🚫 {a}</span>' for a in allergies_list]) if allergies_list else '<span>None</span>'}
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# Handle Plan Generation
+# Generate Plan Processing
 if generate_btn:
-    with st.spinner(f"🤖 Generating {num_days}-day meal plan for {friend_name}..."):
+    with st.spinner(f"✨ Generating a personalized {num_days}-day meal plan for {friend_name} with {selected_model}..."):
         try:
             plan = planner.generate_meal_plan(
                 allergies=allergies_list,
                 preferences=preferences,
                 days=num_days,
-                model_name=selected_model
+                model_name=selected_model,
+                temperature=temperature
             )
             st.session_state.meal_plan = plan
-            st.success(f"🎉 Created a {num_days}-day meal plan for {friend_name}!")
+            st.toast(f"Plan generated for {friend_name}!", icon="🎉")
         except Exception as e:
             st.error(f"⚠️ {str(e)}")
 
-# Display Meal Plan Day by Day
+# Display Meal Plan with Interactive Tabs per Day
 if st.session_state.meal_plan:
     plan = st.session_state.meal_plan
     days = plan.get("days", [])
     
-    st.subheader(f"📅 {friend_name}'s Weekly Plan ({len(days)} Days)")
+    st.markdown(f"### 📅 {friend_name}'s Weekly Schedule")
     
-    for idx, day in enumerate(days):
+    # Create interactive Day Tabs
+    tab_titles = [f"🗓️ {day.get('day', f'Day {i+1}')}" for i, day in enumerate(days)]
+    day_tabs = st.tabs(tab_titles)
+    
+    for idx, (tab, day) in enumerate(zip(day_tabs, days)):
         day_label = day.get("day", f"Day {idx + 1}")
         
-        with st.expander(f"🗓️ {day_label}", expanded=(idx == 0)):
-            col1, col2, col3 = st.columns(3)
+        with tab:
+            st.markdown("<br>", unsafe_allow_html=True)
+            m1, m2, m3 = st.columns(3)
             
             # Breakfast
-            with col1:
+            with m1:
                 b = day.get("breakfast", {})
+                b_ingredients = "\n".join([f"• {ing}" for ing in b.get("ingredients", [])])
                 st.markdown(f"""
-                <div class="meal-box breakfast">
-                    <h4 style="margin: 0 0 8px 0; color: #F59E0B;">🥣 Breakfast</h4>
-                    <strong style="font-size: 1.05rem; color: #F8FAFC;">{b.get('name', 'Breakfast')}</strong>
+                <div class="meal-box-glass">
+                    <div>
+                        <span class="meal-type-tag breakfast-tag">🥣 Breakfast</span>
+                        <h3 style="margin: 4px 0 12px 0; color: #F8FAFC; font-size: 1.2rem;">{b.get('name', 'Breakfast')}</h3>
+                        <p style="font-size: 0.88rem; color: #CBD5E1; margin-bottom: 12px; font-weight: 600;">Ingredients:</p>
+                        <p style="font-size: 0.85rem; color: #94A3B8; white-space: pre-line; line-height: 1.5;">{b_ingredients}</p>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
-                st.markdown("**Ingredients:**")
-                for ing in b.get("ingredients", []):
-                    st.write(f"- {ing}")
                 if b.get("instructions"):
                     st.caption(f"**Instructions:** {b.get('instructions')}")
 
             # Lunch
-            with col2:
+            with m2:
                 l = day.get("lunch", {})
+                l_ingredients = "\n".join([f"• {ing}" for ing in l.get("ingredients", [])])
                 st.markdown(f"""
-                <div class="meal-box lunch">
-                    <h4 style="margin: 0 0 8px 0; color: #10B981;">🥗 Lunch</h4>
-                    <strong style="font-size: 1.05rem; color: #F8FAFC;">{l.get('name', 'Lunch')}</strong>
+                <div class="meal-box-glass">
+                    <div>
+                        <span class="meal-type-tag lunch-tag">🥗 Lunch</span>
+                        <h3 style="margin: 4px 0 12px 0; color: #F8FAFC; font-size: 1.2rem;">{l.get('name', 'Lunch')}</h3>
+                        <p style="font-size: 0.88rem; color: #CBD5E1; margin-bottom: 12px; font-weight: 600;">Ingredients:</p>
+                        <p style="font-size: 0.85rem; color: #94A3B8; white-space: pre-line; line-height: 1.5;">{l_ingredients}</p>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
-                st.markdown("**Ingredients:**")
-                for ing in l.get("ingredients", []):
-                    st.write(f"- {ing}")
                 if l.get("instructions"):
                     st.caption(f"**Instructions:** {l.get('instructions')}")
 
             # Dinner
-            with col3:
+            with m3:
                 d = day.get("dinner", {})
+                d_ingredients = "\n".join([f"• {ing}" for ing in d.get("ingredients", [])])
                 st.markdown(f"""
-                <div class="meal-box dinner">
-                    <h4 style="margin: 0 0 8px 0; color: #6366F1;">🍲 Dinner</h4>
-                    <strong style="font-size: 1.05rem; color: #F8FAFC;">{d.get('name', 'Dinner')}</strong>
+                <div class="meal-box-glass">
+                    <div>
+                        <span class="meal-type-tag dinner-tag">🍲 Dinner</span>
+                        <h3 style="margin: 4px 0 12px 0; color: #F8FAFC; font-size: 1.2rem;">{d.get('name', 'Dinner')}</h3>
+                        <p style="font-size: 0.88rem; color: #CBD5E1; margin-bottom: 12px; font-weight: 600;">Ingredients:</p>
+                        <p style="font-size: 0.85rem; color: #94A3B8; white-space: pre-line; line-height: 1.5;">{d_ingredients}</p>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
-                st.markdown("**Ingredients:**")
-                for ing in d.get("ingredients", []):
-                    st.write(f"- {ing}")
                 if d.get("instructions"):
                     st.caption(f"**Instructions:** {d.get('instructions')}")
 
             st.markdown("<br>", unsafe_allow_html=True)
             
-            # Regenerate Single Day Button
-            if st.button(f"🔄 Regenerate {day_label}", key=f"regen_{idx}"):
-                with st.spinner(f"Regenerating {day_label} for {friend_name}..."):
-                    new_day = planner.regenerate_single_day(
-                        allergies=allergies_list,
-                        preferences=preferences,
-                        day_label=day_label,
-                        model_name=selected_model
-                    )
-                    st.session_state.meal_plan["days"][idx] = new_day
-                    st.session_state.meal_plan = planner.update_shopping_list(st.session_state.meal_plan)
-                    st.toast(f"Updated {day_label}!", icon="✨")
-                    st.rerun()
+            # Single Day Regeneration Button
+            col_re1, col_re2 = st.columns([1, 4])
+            with col_re1:
+                if st.button(f"🔄 Regenerate {day_label}", key=f"tab_regen_{idx}", kind="secondary", use_container_width=True):
+                    with st.spinner(f"Re-rolling {day_label} for {friend_name}..."):
+                        new_day = planner.regenerate_single_day(
+                            allergies=allergies_list,
+                            preferences=preferences,
+                            day_label=day_label,
+                            model_name=selected_model,
+                            temperature=temperature
+                        )
+                        st.session_state.meal_plan["days"][idx] = new_day
+                        st.session_state.meal_plan = planner.update_shopping_list(st.session_state.meal_plan)
+                        st.toast(f"Regenerated {day_label}!", icon="✨")
+                        st.rerun()
 
-    # Shopping List at the Bottom (Copyable)
+    # Glassmorphic Shopping List & Export Section
     st.markdown("---")
-    st.subheader(f"🛒 Consolidated Shopping List for {friend_name}")
-    st.caption("Consolidated list of all required ingredients across all days (click copy icon at top right of box).")
+    st.markdown(f"### 🛒 Consolidated Shopping List for {friend_name}")
     
     shopping_items = plan.get("shopping_list", [])
     if shopping_items:
-        formatted_list = f"=== Weekly Shopping List for {friend_name} ===\n" + "\n".join([f"- {item}" for item in shopping_items])
-        st.code(formatted_list, language="markdown")
+        formatted_list = f"=== Weekly Grocery List for {friend_name} ===\n" + "\n".join([f"- {item}" for item in shopping_items])
+        
+        sc1, sc2 = st.columns([3, 2])
+        with sc1:
+            st.code(formatted_list, language="markdown")
+            
+        with sc2:
+            st.markdown("#### 📥 Export Options")
+            st.caption("Download your shopping list or complete meal plan JSON for backup or mobile sharing.")
+            
+            st.download_button(
+                label="📄 Download Shopping List (.txt)",
+                data=formatted_list,
+                file_name=f"{friend_name.lower()}_shopping_list.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+            
+            json_plan_str = json.dumps(plan, indent=2)
+            st.download_button(
+                label="📦 Download Complete Plan (.json)",
+                data=json_plan_str,
+                file_name=f"{friend_name.lower()}_meal_plan.json",
+                mime="application/json",
+                use_container_width=True
+            )
     else:
         st.info("No shopping list items available.")
 
 else:
-    st.info(f"👈 Customize {friend_name}'s allergies and preferences in the sidebar, then click **'Generate Plan'**!")
+    st.info(f"👈 Customize {friend_name}'s preferences in the sidebar, then click **'Generate Plan'** to start!")
