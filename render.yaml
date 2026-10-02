@@ -2,7 +2,7 @@ services:
   - type: web
     name: allergy-meal-planner
     env: docker
-    plan: standard
+    plan: free
     dockerfilePath: Dockerfile
     envVars:
       - key: OLLAMA_MODEL
