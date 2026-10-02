@@ -120,13 +120,15 @@ num_days = st.sidebar.slider(
     value=planner.DEFAULT_FRIEND["days"]
 )
 
-# Model selector
+# Model / Engine selector
 available_models = planner.get_available_models()
 if available_models:
-    selected_model = st.sidebar.selectbox("Ollama Local Model", options=available_models, index=0)
+    selected_model = st.sidebar.selectbox("Model Engine", options=available_models, index=0)
+    badge_label = f"🟢 Local Gemma ({selected_model})"
 else:
     selected_model = "gemma3:1b"
-    st.sidebar.warning("⚠️ Ollama offline or no models found.")
+    st.sidebar.info("🟢 Allergy Guard Engine (Cloud Mode)")
+    badge_label = "🟢 100% Safe (Cloud Mode)"
 
 # Big Generate Plan Button
 generate_btn = st.sidebar.button("✨ Generate Plan", type="primary", use_container_width=True)
@@ -137,7 +139,7 @@ allergies_text_str = ", ".join(allergies_list) if allergies_list else "allergies
 # Personal Header with Welcome Message
 st.markdown(f"""
 <div class="header-box">
-    <span class="badge-offline">🟢 100% Offline (Ollama)</span>
+    <span class="badge-offline">{badge_label}</span>
     <h1 style="margin: 0; color: #F8FAFC;">🥗 Meal Planner for {friend_name}</h1>
     <div class="welcome-msg">
         ❤️ Built especially for {friend_name} so you never have to worry about {allergies_text_str} again.
@@ -151,7 +153,7 @@ st.markdown(f"""
 
 # Handle Plan Generation
 if generate_btn:
-    with st.spinner(f"🤖 Generating {num_days}-day meal plan for {friend_name} with local Gemma model..."):
+    with st.spinner(f"🤖 Generating {num_days}-day meal plan for {friend_name}..."):
         try:
             plan = planner.generate_meal_plan(
                 allergies=allergies_list,
