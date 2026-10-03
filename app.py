@@ -682,8 +682,11 @@ if generate_btn:
             st.error(f"⚠️ Error creating meal plan: {str(e)}")
 
 # MAIN APPLICATION WORKSPACE - TOP LEVEL TABS
+plan_days_count = len(st.session_state.meal_plan.get("days", [])) if st.session_state.meal_plan else num_days
+days_label_str = f"{plan_days_count}-Day" if plan_days_count > 1 else "1-Day"
+
 main_tab1, main_tab2, main_tab3 = st.tabs([
-    "📅 7-Day Meal Plan", 
+    f"📅 {days_label_str} Meal Plan", 
     "🛒 Consolidated Shopping List", 
     "🛡️ Why Local AI Matters"
 ])
@@ -695,6 +698,8 @@ with main_tab1:
     else:
         plan = st.session_state.meal_plan
         days = plan.get("days", [])
+        plan_days_count = len(days)
+        days_label_str = f"{plan_days_count}-Day" if plan_days_count > 1 else "1-Day"
         audit = plan.get("audit_summary", {})
         engine_source = plan.get("engine", badge_label)
 
@@ -702,11 +707,11 @@ with main_tab1:
         act1, act2, act3 = st.columns([2.5, 2, 3.5])
         with act1:
             if st.button("🔄 Regenerate All Days", type="primary", use_container_width=True):
-                with st.spinner(f"Re-generating full {len(days)}-day plan for {friend_name}..."):
+                with st.spinner(f"Re-generating full {plan_days_count}-day plan for {friend_name}..."):
                     new_plan = planner.generate_meal_plan(
                         allergies=allergies_list,
                         preferences=preferences,
-                        days=len(days),
+                        days=plan_days_count,
                         model_name=selected_model,
                         temperature=temperature
                     )
@@ -727,9 +732,9 @@ with main_tab1:
                 plan=plan
             )
             st.download_button(
-                label="📋 Download 7-Day Plan (PDF)",
+                label=f"📋 Download {days_label_str} Plan (PDF)",
                 data=quick_plan_pdf,
-                file_name=f"{friend_name.lower()}_meal_plan.pdf",
+                file_name=f"{friend_name.lower()}_{plan_days_count}day_meal_plan.pdf",
                 mime="application/pdf",
                 type="secondary",
                 use_container_width=True
@@ -1044,10 +1049,13 @@ with main_tab2:
                 use_container_width=True
             )
 
+            plan_days_count = len(plan.get("days", []))
+            days_label_str = f"{plan_days_count}-Day" if plan_days_count > 1 else "1-Day"
+
             st.download_button(
-                label="📋 Download Complete 7-Day Plan (PDF)",
+                label=f"📋 Download Complete {days_label_str} Plan (PDF)",
                 data=plan_pdf_bytes,
-                file_name=f"{friend_name.lower()}_meal_plan.pdf",
+                file_name=f"{friend_name.lower()}_{plan_days_count}day_meal_plan.pdf",
                 mime="application/pdf",
                 type="primary",
                 use_container_width=True

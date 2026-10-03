@@ -105,8 +105,11 @@ def generate_meal_plan_pdf(
     preferences: str,
     plan: Dict[str, Any]
 ) -> bytes:
-    """Generate a publication-quality complete 7-day meal plan PDF."""
-    pdf = AllergySafePDF(title_header=f"Allergy-Safe Meal Plan - {friend_name}")
+    """Generate a publication-quality complete meal plan PDF reflecting selected days."""
+    days = plan.get("days", [])
+    days_count = len(days)
+    days_text = f"{days_count}-Day " if days_count > 0 else ""
+    pdf = AllergySafePDF(title_header=f"Allergy-Safe {days_text}Meal Plan - {friend_name}")
     pdf.add_page()
 
     # Meta banner
