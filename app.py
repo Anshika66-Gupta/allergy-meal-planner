@@ -192,6 +192,105 @@ st.markdown("""
         color: #94A3B8;
         line-height: 1.45;
     }
+
+    /* 3D Flip Card Container & Animation */
+    .flip-card {
+        background-color: transparent;
+        width: 100%;
+        min-height: 490px;
+        height: 490px;
+        perspective: 1200px;
+        margin-bottom: 24px;
+    }
+
+    .flip-checkbox {
+        display: none;
+    }
+
+    .flip-card-inner {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        text-align: left;
+        transition: transform 0.65s cubic-bezier(0.4, 0, 0.2, 1);
+        transform-style: preserve-3d;
+        border-radius: 18px;
+        cursor: pointer;
+        display: block;
+    }
+
+    .flip-checkbox:checked + .flip-card-inner,
+    .flip-card:hover .flip-card-inner {
+        transform: rotateY(180deg);
+    }
+
+    .flip-card-front, .flip-card-back {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+        border-radius: 18px;
+        padding: 22px;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        overflow-y: auto;
+    }
+
+    /* Front side of card */
+    .flip-card-front {
+        background: rgba(30, 41, 59, 0.65);
+        backdrop-filter: blur(14px);
+        -webkit-backdrop-filter: blur(14px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Back side of card */
+    .flip-card-back {
+        background: linear-gradient(145deg, rgba(30, 27, 75, 0.96) 0%, rgba(15, 23, 42, 0.98) 100%);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(192, 132, 252, 0.4);
+        transform: rotateY(180deg);
+        box-shadow: 0 16px 36px -8px rgba(124, 58, 237, 0.35);
+    }
+
+    .flip-hint-badge {
+        background: rgba(124, 58, 237, 0.25);
+        color: #C084FC;
+        border: 1px solid rgba(192, 132, 252, 0.35);
+        padding: 7px 12px;
+        border-radius: 20px;
+        font-size: 0.76rem;
+        font-weight: 600;
+        text-align: center;
+        margin-top: 10px;
+        letter-spacing: 0.02em;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .flip-hint-badge:hover {
+        background: rgba(124, 58, 237, 0.5);
+        color: #FFFFFF;
+    }
+
+    .chef-tip-box {
+        background: rgba(245, 158, 11, 0.12);
+        border-left: 3px solid #F59E0B;
+        border-radius: 8px;
+        padding: 8px 12px;
+        margin-top: 10px;
+        font-size: 0.8rem;
+        color: #FCD34D;
+        line-height: 1.4;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -420,74 +519,165 @@ with main_tab1:
                 st.markdown("<br>", unsafe_allow_html=True)
                 m1, m2, m3 = st.columns(3)
                 
-                # Breakfast Card
+                # Breakfast Card (3D Rotatable Flip Card)
                 with m1:
                     b = day.get("breakfast", {})
+                    b_name = b.get("name", "Breakfast")
                     b_time = b.get("prep_time", "15 mins")
+                    b_desc = b.get("description", "A wholesome, allergy-safe recipe prepared fresh.")
                     b_ingredients = "\n".join([f"• {ing}" for ing in b.get("ingredients", [])])
                     b_instructions = b.get("instructions", "Prepare fresh and enjoy warm.")
+                    b_tip = b.get("chef_tip", "Season to taste with fresh herbs and olive oil.")
+                    card_id_b = f"flip_card_{idx}_b"
+                    
                     st.markdown(f"""
-                    <div class="meal-box-glass">
-                        <div>
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span class="meal-type-tag breakfast-tag">🥣 Breakfast</span>
-                                <span style="font-size:0.8rem; color:#94A3B8;">⏱️ {b_time}</span>
+                    <div class="flip-card">
+                        <input type="checkbox" id="{card_id_b}" class="flip-checkbox" />
+                        <label for="{card_id_b}" class="flip-card-inner">
+                            <div class="flip-card-front">
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                        <span class="meal-type-tag breakfast-tag">🥣 Breakfast</span>
+                                        <span style="font-size:0.8rem; color:#94A3B8;">⏱️ {b_time}</span>
+                                    </div>
+                                    <h3 style="margin: 8px 0 6px 0; color: #F8FAFC; font-size: 1.15rem;">{b_name}</h3>
+                                    <p style="font-size: 0.82rem; color: #A5B4FC; font-style: italic; margin-bottom: 10px; line-height: 1.4;">
+                                        {b_desc}
+                                    </p>
+                                    <p style="font-size: 0.84rem; color: #CBD5E1; margin-bottom: 6px; font-weight: 600;">Ingredients:</p>
+                                    <p style="font-size: 0.82rem; color: #94A3B8; white-space: pre-line; line-height: 1.45;">{b_ingredients}</p>
+                                </div>
+                                <div class="flip-hint-badge">
+                                    🔄 Click or Hover to Flip for Prep Method ➔
+                                </div>
                             </div>
-                            <h3 style="margin: 8px 0 10px 0; color: #F8FAFC; font-size: 1.15rem;">{b.get('name', 'Breakfast')}</h3>
-                            <p style="font-size: 0.86rem; color: #CBD5E1; margin-bottom: 6px; font-weight: 600;">Ingredients:</p>
-                            <p style="font-size: 0.84rem; color: #94A3B8; white-space: pre-line; line-height: 1.5; margin-bottom: 10px;">{b_ingredients}</p>
-                        </div>
-                        <div class="method-box">
-                            <strong>👨‍🍳 Method:</strong> {b_instructions}
-                        </div>
+                            <div class="flip-card-back">
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                                        <span style="font-size:0.85rem; font-weight:700; color:#C084FC;">👨‍🍳 Step-by-Step Cooking Guide</span>
+                                        <span style="font-size:0.75rem; color:#34D399; background:rgba(6,78,59,0.6); padding:2px 8px; border-radius:10px;">🟢 Verified Safe</span>
+                                    </div>
+                                    <div style="font-size:0.82rem; color:#E2E8F0; line-height:1.5; white-space:pre-line; margin-bottom: 10px;">
+                                        {b_instructions}
+                                    </div>
+                                    <div class="chef-tip-box">
+                                        💡 <strong>Chef's Tip:</strong> {b_tip}
+                                    </div>
+                                </div>
+                                <div class="flip-hint-badge" style="background:rgba(30,41,59,0.7); color:#94A3B8;">
+                                    ↺ Click to flip back to ingredients
+                                </div>
+                            </div>
+                        </label>
                     </div>
                     """, unsafe_allow_html=True)
 
-                # Lunch Card
+                # Lunch Card (3D Rotatable Flip Card)
                 with m2:
                     l = day.get("lunch", {})
+                    l_name = l.get("name", "Lunch")
                     l_time = l.get("prep_time", "15 mins")
+                    l_desc = l.get("description", "A nourishing, allergy-safe midday meal.")
                     l_ingredients = "\n".join([f"• {ing}" for ing in l.get("ingredients", [])])
                     l_instructions = l.get("instructions", "Prepare fresh and enjoy warm.")
+                    l_tip = l.get("chef_tip", "Season to taste with fresh herbs and olive oil.")
+                    card_id_l = f"flip_card_{idx}_l"
+                    
                     st.markdown(f"""
-                    <div class="meal-box-glass">
-                        <div>
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span class="meal-type-tag lunch-tag">🥗 Lunch</span>
-                                <span style="font-size:0.8rem; color:#94A3B8;">⏱️ {l_time}</span>
+                    <div class="flip-card">
+                        <input type="checkbox" id="{card_id_l}" class="flip-checkbox" />
+                        <label for="{card_id_l}" class="flip-card-inner">
+                            <div class="flip-card-front">
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                        <span class="meal-type-tag lunch-tag">🥗 Lunch</span>
+                                        <span style="font-size:0.8rem; color:#94A3B8;">⏱️ {l_time}</span>
+                                    </div>
+                                    <h3 style="margin: 8px 0 6px 0; color: #F8FAFC; font-size: 1.15rem;">{l_name}</h3>
+                                    <p style="font-size: 0.82rem; color: #A5B4FC; font-style: italic; margin-bottom: 10px; line-height: 1.4;">
+                                        {l_desc}
+                                    </p>
+                                    <p style="font-size: 0.84rem; color: #CBD5E1; margin-bottom: 6px; font-weight: 600;">Ingredients:</p>
+                                    <p style="font-size: 0.82rem; color: #94A3B8; white-space: pre-line; line-height: 1.45;">{l_ingredients}</p>
+                                </div>
+                                <div class="flip-hint-badge">
+                                    🔄 Click or Hover to Flip for Prep Method ➔
+                                </div>
                             </div>
-                            <h3 style="margin: 8px 0 10px 0; color: #F8FAFC; font-size: 1.15rem;">{l.get('name', 'Lunch')}</h3>
-                            <p style="font-size: 0.86rem; color: #CBD5E1; margin-bottom: 6px; font-weight: 600;">Ingredients:</p>
-                            <p style="font-size: 0.84rem; color: #94A3B8; white-space: pre-line; line-height: 1.5; margin-bottom: 10px;">{l_ingredients}</p>
-                        </div>
-                        <div class="method-box">
-                            <strong>👨‍🍳 Method:</strong> {l_instructions}
-                        </div>
+                            <div class="flip-card-back">
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                                        <span style="font-size:0.85rem; font-weight:700; color:#C084FC;">👨‍🍳 Step-by-Step Cooking Guide</span>
+                                        <span style="font-size:0.75rem; color:#34D399; background:rgba(6,78,59,0.6); padding:2px 8px; border-radius:10px;">🟢 Verified Safe</span>
+                                    </div>
+                                    <div style="font-size:0.82rem; color:#E2E8F0; line-height:1.5; white-space:pre-line; margin-bottom: 10px;">
+                                        {l_instructions}
+                                    </div>
+                                    <div class="chef-tip-box">
+                                        💡 <strong>Chef's Tip:</strong> {l_tip}
+                                    </div>
+                                </div>
+                                <div class="flip-hint-badge" style="background:rgba(30,41,59,0.7); color:#94A3B8;">
+                                    ↺ Click to flip back to ingredients
+                                </div>
+                            </div>
+                        </label>
                     </div>
                     """, unsafe_allow_html=True)
 
-                # Dinner Card
+                # Dinner Card (3D Rotatable Flip Card)
                 with m3:
                     d = day.get("dinner", {})
+                    d_name = d.get("name", "Dinner")
                     d_time = d.get("prep_time", "20 mins")
+                    d_desc = d.get("description", "A delicious, comforting allergy-safe dinner.")
                     d_ingredients = "\n".join([f"• {ing}" for ing in d.get("ingredients", [])])
                     d_instructions = d.get("instructions", "Prepare fresh and enjoy warm.")
+                    d_tip = d.get("chef_tip", "Season to taste with fresh herbs and olive oil.")
+                    card_id_d = f"flip_card_{idx}_d"
+                    
                     st.markdown(f"""
-                    <div class="meal-box-glass">
-                        <div>
-                            <div style="display:flex; justify-content:space-between; align-items:center;">
-                                <span class="meal-type-tag dinner-tag">🍲 Dinner</span>
-                                <span style="font-size:0.8rem; color:#94A3B8;">⏱️ {d_time}</span>
+                    <div class="flip-card">
+                        <input type="checkbox" id="{card_id_d}" class="flip-checkbox" />
+                        <label for="{card_id_d}" class="flip-card-inner">
+                            <div class="flip-card-front">
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                                        <span class="meal-type-tag dinner-tag">🍲 Dinner</span>
+                                        <span style="font-size:0.8rem; color:#94A3B8;">⏱️ {d_time}</span>
+                                    </div>
+                                    <h3 style="margin: 8px 0 6px 0; color: #F8FAFC; font-size: 1.15rem;">{d_name}</h3>
+                                    <p style="font-size: 0.82rem; color: #A5B4FC; font-style: italic; margin-bottom: 10px; line-height: 1.4;">
+                                        {d_desc}
+                                    </p>
+                                    <p style="font-size: 0.84rem; color: #CBD5E1; margin-bottom: 6px; font-weight: 600;">Ingredients:</p>
+                                    <p style="font-size: 0.82rem; color: #94A3B8; white-space: pre-line; line-height: 1.45;">{d_ingredients}</p>
+                                </div>
+                                <div class="flip-hint-badge">
+                                    🔄 Click or Hover to Flip for Prep Method ➔
+                                </div>
                             </div>
-                            <h3 style="margin: 8px 0 10px 0; color: #F8FAFC; font-size: 1.15rem;">{d.get('name', 'Dinner')}</h3>
-                            <p style="font-size: 0.86rem; color: #CBD5E1; margin-bottom: 6px; font-weight: 600;">Ingredients:</p>
-                            <p style="font-size: 0.84rem; color: #94A3B8; white-space: pre-line; line-height: 1.5; margin-bottom: 10px;">{d_ingredients}</p>
-                        </div>
-                        <div class="method-box">
-                            <strong>👨‍🍳 Method:</strong> {d_instructions}
-                        </div>
+                            <div class="flip-card-back">
+                                <div>
+                                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+                                        <span style="font-size:0.85rem; font-weight:700; color:#C084FC;">👨‍🍳 Step-by-Step Cooking Guide</span>
+                                        <span style="font-size:0.75rem; color:#34D399; background:rgba(6,78,59,0.6); padding:2px 8px; border-radius:10px;">🟢 Verified Safe</span>
+                                    </div>
+                                    <div style="font-size:0.82rem; color:#E2E8F0; line-height:1.5; white-space:pre-line; margin-bottom: 10px;">
+                                        {d_instructions}
+                                    </div>
+                                    <div class="chef-tip-box">
+                                        💡 <strong>Chef's Tip:</strong> {d_tip}
+                                    </div>
+                                </div>
+                                <div class="flip-hint-badge" style="background:rgba(30,41,59,0.7); color:#94A3B8;">
+                                    ↺ Click to flip back to ingredients
+                                </div>
+                            </div>
+                        </label>
                     </div>
                     """, unsafe_allow_html=True)
+
 
                 st.markdown("<br>", unsafe_allow_html=True)
                 

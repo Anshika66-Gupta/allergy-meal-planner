@@ -140,8 +140,10 @@ def generate_meal_plan_pdf(
             meal = day.get(meal_key, {})
             name = clean_pdf_text(meal.get("name", label))
             time_str = clean_pdf_text(meal.get("prep_time", "15 mins"))
+            desc = clean_pdf_text(meal.get("description", ""))
             ingredients = [clean_pdf_text(i) for i in meal.get("ingredients", [])]
             instructions = clean_pdf_text(meal.get("instructions", ""))
+            chef_tip = clean_pdf_text(meal.get("chef_tip", ""))
 
             pdf.set_x(pdf.l_margin)
             pdf.set_font("helvetica", "B", 10)
@@ -150,17 +152,29 @@ def generate_meal_plan_pdf(
             pdf.set_text_color(15, 23, 42)
             pdf.cell(pdf.epw - 24, 6, f"{name} ({time_str})", new_x="LMARGIN", new_y="NEXT")
 
+            if desc:
+                pdf.set_x(pdf.l_margin)
+                pdf.set_font("helvetica", "I", 8.5)
+                pdf.set_text_color(100, 116, 139)
+                pdf.multi_cell(w=pdf.epw, h=4.2, text=f"    {desc}")
+
             pdf.set_x(pdf.l_margin)
             pdf.set_font("helvetica", size=8.5)
             pdf.set_text_color(71, 85, 105)
             if ingredients:
                 ing_str = "Ingredients: " + ", ".join(ingredients)
-                pdf.multi_cell(w=pdf.epw, h=4.5, text=f"    {ing_str}")
+                pdf.multi_cell(w=pdf.epw, h=4.2, text=f"    {ing_str}")
             if instructions:
                 pdf.set_x(pdf.l_margin)
-                pdf.multi_cell(w=pdf.epw, h=4.5, text=f"    Method: {instructions}")
+                pdf.multi_cell(w=pdf.epw, h=4.2, text=f"    Prep Method: {instructions}")
+            if chef_tip:
+                pdf.set_x(pdf.l_margin)
+                pdf.set_font("helvetica", "I", 8)
+                pdf.set_text_color(180, 83, 9) # Amber
+                pdf.multi_cell(w=pdf.epw, h=4.2, text=f"    Chef Tip: {chef_tip}")
             pdf.ln(1)
 
         pdf.ln(2)
+
 
     return bytes(pdf.output())
