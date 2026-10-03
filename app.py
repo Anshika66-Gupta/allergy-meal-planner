@@ -5,7 +5,6 @@ app.py - Comprehensive, Classy & Feature-Complete Streamlit UI for Allergy-Safe 
 import streamlit as st
 import planner
 import pdf_export
-import json
 
 # Streamlit Page Config
 st.set_page_config(
@@ -1060,16 +1059,7 @@ with main_tab2:
                 type="primary",
                 use_container_width=True
             )
-            
-            json_plan_str = json.dumps(plan, indent=2)
-            st.download_button(
-                label="📦 Download Plan Data (.json)",
-                data=json_plan_str,
-                file_name=f"{friend_name.lower()}_meal_plan.json",
-                mime="application/json",
-                type="secondary",
-                use_container_width=True
-            )
+
 
 
 # TAB 3: WHY LOCAL AI MATTERS
