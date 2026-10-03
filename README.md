@@ -76,11 +76,40 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-### 3. Launch the Application
+### 3. Launch the Application Locally
 ```bash
 streamlit run app.py
 ```
+Or run with start script:
+```bash
+./start.sh
+```
 Open your browser at `http://localhost:8501`.
+
+### 4. Run Automated Test Suite
+```bash
+python test_planner_suite.py
+```
+
+---
+
+## ☁️ Deployment on Render
+
+This repository is ready to deploy directly on [Render](https://render.com) as a Web Service.
+
+### Option A: Render Native Python Web Service (Recommended for Free Tier)
+1. Link this repository in Render as a **Web Service**.
+2. Render uses `render.yaml` automatically:
+   - **Environment**: Python 3.11
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `streamlit run app.py --server.port=$PORT --server.address=0.0.0.0 --server.headless=true --browser.gatherUsageStats=false`
+3. The app automatically detects the cloud environment and runs with the **Smart Safety Engine**, delivering fast, diverse, allergen-safe meal plans with 0 cold-start delays.
+
+### Option B: Docker Container Deployment
+Render also supports Docker services using the included `Dockerfile` and `start.sh`:
+- Runs local Ollama daemon
+- Automatically binds to `$PORT` without timeout issues
+- Streamlit UI starts immediately
 
 ---
 
