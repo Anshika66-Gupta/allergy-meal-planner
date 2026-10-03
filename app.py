@@ -4,6 +4,7 @@ app.py - Comprehensive, Classy & Feature-Complete Streamlit UI for Allergy-Safe 
 
 import streamlit as st
 import planner
+import pdf_export
 import json
 
 # Streamlit Page Config
@@ -560,37 +561,61 @@ with main_tab2:
                     st.markdown("<br>", unsafe_allow_html=True)
                     
         with c2:
-            st.markdown("#### 📋 Formatted Plaintext & Downloads")
+            st.markdown("#### 📄 Export & Downloads")
             
-            # Build organized plaintext list by category
-            formatted_lines = [f"=== Weekly Grocery List for {friend_name} ===", ""]
-            for category, items in categorized_shop.items():
-                if items:
-                    formatted_lines.append(f"[{category}]")
-                    for itm in items:
-                        chk_mark = "[x]" if itm in st.session_state.checked_items else "[ ]"
-                        formatted_lines.append(f"{chk_mark} {itm}")
-                    formatted_lines.append("")
+            # Generate PDFs using pdf_export
+            shop_pdf_bytes = pdf_export.generate_shopping_list_pdf(
+                friend_name=friend_name,
+                allergies=allergies_list,
+                categorized_items=categorized_shop,
+                checked_items=st.session_state.checked_items
+            )
             
-            formatted_list = "\n".join(formatted_lines)
-            st.code(formatted_list, language="markdown")
+            plan_pdf_bytes = pdf_export.generate_meal_plan_pdf(
+                friend_name=friend_name,
+                allergies=allergies_list,
+                preferences=preferences,
+                plan=plan
+            )
+
+            # Elegant summary box instead of raw plaintext
+            st.markdown(f"""
+            <div style="background: rgba(30, 41, 59, 0.45); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 18px; margin-bottom: 18px;">
+                <h4 style="margin: 0 0 10px 0; color: #F8FAFC; font-size: 1.05rem;">🛒 Grocery Summary</h4>
+                <p style="margin: 4px 0; font-size: 0.88rem; color: #CBD5E1;">• <strong>Total Items:</strong> {total_items_count} items across {len([k for k, v in categorized_shop.items() if v])} aisles</p>
+                <p style="margin: 4px 0; font-size: 0.88rem; color: #CBD5E1;">• <strong>Checked Off:</strong> {checked_count} of {total_items_count} items</p>
+                <p style="margin: 4px 0; font-size: 0.88rem; color: #34D399;">• <strong>Safety Seal:</strong> 100% free of {allergies_text_str}</p>
+            </div>
+            """, unsafe_allow_html=True)
             
             st.download_button(
-                label="📄 Download Shopping List (.txt)",
-                data=formatted_list,
-                file_name=f"{friend_name.lower()}_shopping_list.txt",
-                mime="text/plain",
+                label="📄 Download Grocery List (PDF)",
+                data=shop_pdf_bytes,
+                file_name=f"{friend_name.lower()}_grocery_list.pdf",
+                mime="application/pdf",
+                type="primary",
+                use_container_width=True
+            )
+
+            st.download_button(
+                label="📋 Download Complete 7-Day Plan (PDF)",
+                data=plan_pdf_bytes,
+                file_name=f"{friend_name.lower()}_meal_plan.pdf",
+                mime="application/pdf",
+                type="primary",
                 use_container_width=True
             )
             
             json_plan_str = json.dumps(plan, indent=2)
             st.download_button(
-                label="📦 Download Complete Plan (.json)",
+                label="📦 Download Plan Data (.json)",
                 data=json_plan_str,
                 file_name=f"{friend_name.lower()}_meal_plan.json",
                 mime="application/json",
+                type="secondary",
                 use_container_width=True
             )
+
 
 # TAB 3: WHY LOCAL AI MATTERS
 with main_tab3:

@@ -138,7 +138,18 @@ def run_tests():
     assert_test(parsed["days"][0]["breakfast"]["name"] == "Oatmeal with berries", "Normalized meal preserves title")
     assert_test(len(parsed["shopping_list"]) == 6, "Trailing comma in JSON repaired")
 
+    # Test 10: PDF Export Generation
+    import pdf_export
+    shop_pdf = pdf_export.generate_shopping_list_pdf("Anny", ["Peanuts", "Dairy"], aisles, checked_items={"Fresh Spinach"})
+    assert_test(isinstance(shop_pdf, bytes) and len(shop_pdf) > 1000, "Grocery list PDF generated successfully")
+    assert_test(shop_pdf.startswith(b"%PDF"), "Grocery list PDF starts with standard %PDF header")
+
+    plan_pdf = pdf_export.generate_meal_plan_pdf("Anny", ["Peanuts", "Dairy"], "Vegetarian", anny_plan)
+    assert_test(isinstance(plan_pdf, bytes) and len(plan_pdf) > 1000, "Meal plan PDF generated successfully")
+    assert_test(plan_pdf.startswith(b"%PDF"), "Meal plan PDF starts with standard %PDF header")
+
     print(f"\n🎉 ALL {total} TESTS PASSED CLEANLY! (100% SUCCESS)")
 
 if __name__ == "__main__":
     run_tests()
+
