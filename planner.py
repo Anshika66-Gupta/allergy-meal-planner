@@ -80,6 +80,36 @@ def clean_and_deduplicate_shopping_list(raw_items: List[str]) -> List[str]:
             
     return sorted(deduped, key=lambda x: x.lower())
 
+def generate_categorized_shopping_list(items: List[str]) -> Dict[str, List[str]]:
+    """Group shopping list items into grocery aisles."""
+    categorized = {
+        "🥬 Produce & Fresh Herbs": [],
+        "🍗 Meat, Fish & Plant Proteins": [],
+        "🥛 Dairy & Milk Alternatives": [],
+        "🌾 Grains, Pastas & Bakery": [],
+        "🧂 Oils, Spices & Pantry": []
+    }
+    
+    produce_kw = ["spinach", "lettuce", "avocado", "cucumber", "tomato", "tomatoes", "apple", "banana", "berry", "berries", "lemon", "lime", "broccoli", "asparagus", "sweet potato", "potatoes", "onion", "garlic", "bell pepper", "peppers", "celery", "zucchini", "carrots", "ginger", "cabbage", "basil", "parsley", "fruit", "vegetables", "herb", "okra", "bhindi", "eggplant", "baingan", "curry leaves", "cilantro", "peas"]
+    protein_kw = ["chicken", "turkey", "beef", "salmon", "cod", "fish", "pork", "sausage", "tofu", "chickpeas", "lentils", "black beans", "beans", "eggs", "dal", "rajma", "besan", "paneer"]
+    dairy_alt_kw = ["dairy-free", "almond milk", "oat milk", "coconut milk", "plant-based milk", "vegan cheese", "dairy-free yogurt"]
+    grains_kw = ["oats", "oatmeal", "rice", "quinoa", "gluten-free bread", "corn tortillas", "wrap", "gluten-free pasta", "rice cakes", "granola", "poha", "basmati", "rava", "idli"]
+
+    for clean_item in items:
+        item_lower = clean_item.lower()
+        if any(kw in item_lower for kw in dairy_alt_kw):
+            categorized["🥛 Dairy & Milk Alternatives"].append(clean_item)
+        elif any(kw in item_lower for kw in protein_kw):
+            categorized["🍗 Meat, Fish & Plant Proteins"].append(clean_item)
+        elif any(kw in item_lower for kw in produce_kw):
+            categorized["🥬 Produce & Fresh Herbs"].append(clean_item)
+        elif any(kw in item_lower for kw in grains_kw):
+            categorized["🌾 Grains, Pastas & Bakery"].append(clean_item)
+        else:
+            categorized["🧂 Oils, Spices & Pantry"].append(clean_item)
+            
+    return categorized
+
 def parse_and_validate_json(raw_text: str) -> Dict[str, Any]:
     """Parse JSON string and validate required schema structure."""
     cleaned = clean_json_text(raw_text)
@@ -150,28 +180,28 @@ def generate_smart_fallback_meal_plan(allergies: List[str], preferences: str, da
     day_names = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
     
     breakfast_pool = [
-        {"name": "Masala Poha with Peas & Curry Leaves", "ingredients": ["Flattened Rice (Poha)", "Green Peas", "Mustard Seeds", "Curry Leaves", "Turmeric", "Lemon"], "instructions": "Rinse poha. Sauté mustard seeds, curry leaves, and peas. Toss poha with turmeric and fresh lemon juice."},
-        {"name": "Avocado & Tomato Toast on Gluten-Free Bread", "ingredients": ["Gluten-Free Bread", "Ripe Avocado", "Cherry Tomatoes", "Olive Oil", "Black Pepper"], "instructions": "Toast bread. Mash avocado with olive oil and salt, spread over toast, and top with sliced cherry tomatoes."},
-        {"name": "Besan Chilla (Savory Chickpea Pancakes)", "ingredients": ["Chickpea Flour (Besan)", "Onion", "Tomato", "Cilantro", "Carom Seeds (Ajwain)", "Water"], "instructions": "Mix besan with water, diced veggies, and spices to form a batter. Pour onto a pan and cook until golden on both sides."},
-        {"name": "South Indian Oats Upma", "ingredients": ["Gluten-Free Oats", "Mustard Seeds", "Ginger", "Green Chili", "Veggies (Carrots, Peas)", "Olive Oil"], "instructions": "Roast oats. Sauté spices and diced vegetables. Add hot water, fold in oats, and cook until fluffy."},
-        {"name": "Smoothie Bowl with Chia & Berries", "ingredients": ["Oat Milk", "Frozen Bananas", "Blueberries", "Chia Seeds", "Sunflower Seed Butter"], "instructions": "Blend banana, oat milk, and blueberries into a thick smoothie. Top with chia seeds and sunflower seed butter."},
-        {"name": "Tofu Scramble with Spinach & Turmeric", "ingredients": ["Firm Tofu", "Spinach", "Turmeric", "Garlic Powder", "Olive Oil", "Salt"], "instructions": "Crumble tofu into a skillet with olive oil. Add turmeric, garlic powder, and fresh spinach. Sauté until wilted."}
+        {"name": "Masala Poha with Peas & Curry Leaves", "prep_time": "15 mins", "ingredients": ["Flattened Rice (Poha)", "Green Peas", "Mustard Seeds", "Curry Leaves", "Turmeric", "Lemon"], "instructions": "Rinse poha. Sauté mustard seeds, curry leaves, and peas. Toss poha with turmeric and fresh lemon juice."},
+        {"name": "Avocado & Tomato Toast on Gluten-Free Bread", "prep_time": "10 mins", "ingredients": ["Gluten-Free Bread", "Ripe Avocado", "Cherry Tomatoes", "Olive Oil", "Black Pepper"], "instructions": "Toast bread. Mash avocado with olive oil and salt, spread over toast, and top with sliced cherry tomatoes."},
+        {"name": "Besan Chilla (Savory Chickpea Pancakes)", "prep_time": "15 mins", "ingredients": ["Chickpea Flour (Besan)", "Onion", "Tomato", "Cilantro", "Carom Seeds (Ajwain)", "Water"], "instructions": "Mix besan with water, diced veggies, and spices to form a batter. Pour onto a pan and cook until golden on both sides."},
+        {"name": "South Indian Oats Upma", "prep_time": "15 mins", "ingredients": ["Gluten-Free Oats", "Mustard Seeds", "Ginger", "Green Chili", "Veggies (Carrots, Peas)", "Olive Oil"], "instructions": "Roast oats. Sauté spices and diced vegetables. Add hot water, fold in oats, and cook until fluffy."},
+        {"name": "Smoothie Bowl with Chia & Berries", "prep_time": "10 mins", "ingredients": ["Oat Milk", "Frozen Bananas", "Blueberries", "Chia Seeds", "Sunflower Seed Butter"], "instructions": "Blend banana, oat milk, and blueberries into a thick smoothie. Top with chia seeds and sunflower seed butter."},
+        {"name": "Tofu Scramble with Spinach & Turmeric", "prep_time": "15 mins", "ingredients": ["Firm Tofu", "Spinach", "Turmeric", "Garlic Powder", "Olive Oil", "Salt"], "instructions": "Crumble tofu into a skillet with olive oil. Add turmeric, garlic powder, and fresh spinach. Sauté until wilted."}
     ]
     
     lunch_pool = [
-        {"name": "Yellow Dal Tadka with Jeera Rice", "ingredients": ["Yellow Toor Dal", "Basmati Rice", "Cumin Seeds", "Garlic", "Tomato", "Olive Oil"], "instructions": "Cook dal until soft. Prepare tadka by heating olive oil with cumin, garlic, and tomato. Combine with dal and serve over jeera rice."},
-        {"name": "Chickpea & Avocado Power Bowl", "ingredients": ["Cooked Chickpeas", "Ripe Avocado", "Cucumber", "Cherry Tomatoes", "Lemon Tahini Dressing"], "instructions": "Combine chickpeas, diced cucumber, avocado, and tomatoes in a bowl. Drizzle with lemon tahini dressing."},
-        {"name": "Rajma Masala (Kidney Bean Curry) with Brown Rice", "ingredients": ["Red Kidney Beans (Rajma)", "Onion-Tomato Puree", "Ginger-Garlic Paste", "Garam Masala", "Brown Rice"], "instructions": "Simmer kidney beans in a spiced onion-tomato gravy with garam masala. Serve hot over steamed brown rice."},
-        {"name": "Quinoa Veggie Pulao", "ingredients": ["Quinoa", "Carrots", "Green Beans", "Peas", "Whole Spices (Cardamom, Cloves)", "Olive Oil"], "instructions": "Sauté whole spices and vegetables in olive oil. Add quinoa and vegetable broth, cover, and cook until fluffy."},
-        {"name": "Aloo Gobi (Potato & Cauliflower Curry)", "ingredients": ["Cauliflower Florets", "Potatoes", "Turmeric", "Coriander Powder", "Cumin", "Ginger"], "instructions": "Sauté ginger and cumin. Add potato and cauliflower cubes with turmeric and coriander powder. Cover and cook until tender."}
+        {"name": "Yellow Dal Tadka with Jeera Rice", "prep_time": "20 mins", "ingredients": ["Yellow Toor Dal", "Basmati Rice", "Cumin Seeds", "Garlic", "Tomato", "Olive Oil"], "instructions": "Cook dal until soft. Prepare tadka by heating olive oil with cumin, garlic, and tomato. Combine with dal and serve over jeera rice."},
+        {"name": "Chickpea & Avocado Power Bowl", "prep_time": "12 mins", "ingredients": ["Cooked Chickpeas", "Ripe Avocado", "Cucumber", "Cherry Tomatoes", "Lemon Tahini Dressing"], "instructions": "Combine chickpeas, diced cucumber, avocado, and tomatoes in a bowl. Drizzle with lemon tahini dressing."},
+        {"name": "Rajma Masala (Kidney Bean Curry) with Brown Rice", "prep_time": "20 mins", "ingredients": ["Red Kidney Beans (Rajma)", "Onion-Tomato Puree", "Ginger-Garlic Paste", "Garam Masala", "Brown Rice"], "instructions": "Simmer kidney beans in a spiced onion-tomato gravy with garam masala. Serve hot over steamed brown rice."},
+        {"name": "Quinoa Veggie Pulao", "prep_time": "18 mins", "ingredients": ["Quinoa", "Carrots", "Green Beans", "Peas", "Whole Spices (Cardamom, Cloves)", "Olive Oil"], "instructions": "Sauté whole spices and vegetables in olive oil. Add quinoa and vegetable broth, cover, and cook until fluffy."},
+        {"name": "Aloo Gobi (Potato & Cauliflower Curry)", "prep_time": "20 mins", "ingredients": ["Cauliflower Florets", "Potatoes", "Turmeric", "Coriander Powder", "Cumin", "Ginger"], "instructions": "Sauté ginger and cumin. Add potato and cauliflower cubes with turmeric and coriander powder. Cover and cook until tender."}
     ]
     
     dinner_pool = [
-        {"name": "Palak Tofu Curry with Corn Tortillas", "ingredients": ["Spinach Puree", "Firm Tofu Cubes", "Garlic", "Ginger", "Garam Masala", "Gluten-Free Corn Tortillas"], "instructions": "Sauté garlic and ginger, add fresh spinach puree and tofu cubes. Simmer with garam masala and serve with warm tortillas."},
-        {"name": "Baingan Bharta (Smoked Eggplant Curry) with Rice", "ingredients": ["Roasted Eggplant", "Onions", "Tomatoes", "Green Chilies", "Coriander", "Jeera Rice"], "instructions": "Mash roasted eggplant flesh. Sauté onions, tomatoes, and chilies, fold in eggplant, and simmer for 10 minutes."},
-        {"name": "Bhindi Masala (Spiced Okra) with Lentil Soup", "ingredients": ["Okra (Bhindi)", "Amchur (Mango Powder)", "Cumin", "Yellow Lentils", "Turmeric"], "instructions": "Sauté sliced okra with cumin and amchur powder until crisp. Pair with a bowl of warm turmeric yellow lentil soup."},
-        {"name": "Vegetable Korma (Dairy-Free Coconut Milk)", "ingredients": ["Coconut Milk", "Carrots", "Peas", "Potatoes", "Korma Spice Mix", "Basmati Rice"], "instructions": "Simmer mixed vegetables in rich coconut milk with korma spice mix until vegetables are tender. Serve over basmati rice."},
-        {"name": "South Indian Sambar with Steamed Idli", "ingredients": ["Toor Dal", "Mixed Veggies", "Sambar Powder", "Tamarind Pulp", "Rice Idli"], "instructions": "Cook dal and veggies in tamarind broth with sambar powder. Serve piping hot alongside soft steamed idlis."}
+        {"name": "Palak Tofu Curry with Corn Tortillas", "prep_time": "20 mins", "ingredients": ["Spinach Puree", "Firm Tofu Cubes", "Garlic", "Ginger", "Garam Masala", "Gluten-Free Corn Tortillas"], "instructions": "Sauté garlic and ginger, add fresh spinach puree and tofu cubes. Simmer with garam masala and serve with warm tortillas."},
+        {"name": "Baingan Bharta (Smoked Eggplant Curry) with Rice", "prep_time": "20 mins", "ingredients": ["Roasted Eggplant", "Onions", "Tomatoes", "Green Chilies", "Coriander", "Jeera Rice"], "instructions": "Mash roasted eggplant flesh. Sauté onions, tomatoes, and chilies, fold in eggplant, and simmer for 10 minutes."},
+        {"name": "Bhindi Masala (Spiced Okra) with Lentil Soup", "prep_time": "20 mins", "ingredients": ["Okra (Bhindi)", "Amchur (Mango Powder)", "Cumin", "Yellow Lentils", "Turmeric"], "instructions": "Sauté sliced okra with cumin and amchur powder until crisp. Pair with a bowl of warm turmeric yellow lentil soup."},
+        {"name": "Vegetable Korma (Dairy-Free Coconut Milk)", "prep_time": "20 mins", "ingredients": ["Coconut Milk", "Carrots", "Peas", "Potatoes", "Korma Spice Mix", "Basmati Rice"], "instructions": "Simmer mixed vegetables in rich coconut milk with korma spice mix until vegetables are tender. Serve over basmati rice."},
+        {"name": "South Indian Sambar with Steamed Idli", "prep_time": "18 mins", "ingredients": ["Toor Dal", "Mixed Veggies", "Sambar Powder", "Tamarind Pulp", "Rice Idli"], "instructions": "Cook dal and veggies in tamarind broth with sambar powder. Serve piping hot alongside soft steamed idlis."}
     ]
 
     generated_days = []
@@ -231,16 +261,19 @@ Respond ONLY with a valid raw JSON object in this exact schema:
       "day": "Monday",
       "breakfast": {{
         "name": "Recipe Title",
+        "prep_time": "15 mins",
         "ingredients": ["Ingredient 1", "Ingredient 2"],
         "instructions": "Step-by-step preparation guide."
       }},
       "lunch": {{
         "name": "Recipe Title",
+        "prep_time": "15 mins",
         "ingredients": ["Ingredient 1", "Ingredient 2"],
         "instructions": "Step-by-step preparation guide."
       }},
       "dinner": {{
         "name": "Recipe Title",
+        "prep_time": "20 mins",
         "ingredients": ["Ingredient 1", "Ingredient 2"],
         "instructions": "Step-by-step preparation guide."
       }}
@@ -298,16 +331,19 @@ Respond ONLY with valid raw JSON for {day_label}:
   "day": "{day_label}",
   "breakfast": {{
     "name": "Recipe Title",
+    "prep_time": "15 mins",
     "ingredients": ["Ingredient 1", "Ingredient 2"],
     "instructions": "Step-by-step preparation guide."
   }},
   "lunch": {{
     "name": "Recipe Title",
+    "prep_time": "15 mins",
     "ingredients": ["Ingredient 1", "Ingredient 2"],
     "instructions": "Step-by-step preparation guide."
   }},
   "dinner": {{
     "name": "Recipe Title",
+    "prep_time": "20 mins",
     "ingredients": ["Ingredient 1", "Ingredient 2"],
     "instructions": "Step-by-step preparation guide."
   }}
