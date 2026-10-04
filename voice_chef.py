@@ -14,6 +14,9 @@ import hashlib
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 import requests
+from dotenv import load_dotenv
+
+load_dotenv()
 
 CACHE_DIR = Path(".cache/audio")
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -31,8 +34,8 @@ DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"  # Rachel
 
 def get_api_key(explicit_key: Optional[str] = None) -> Optional[str]:
     """Retrieve ElevenLabs API key from explicit param, environment, or return None."""
-    if explicit_key and explicit_key.strip():
-        return explicit_key.strip()
+    if explicit_key is not None:
+        return explicit_key.strip() or None
     return os.getenv("ELEVENLABS_API_KEY", "").strip() or None
 
 
