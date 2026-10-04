@@ -2,9 +2,11 @@
 app.py - Comprehensive, Classy & Feature-Complete Streamlit UI for Allergy-Safe Meal Planner
 """
 
+import os
 import streamlit as st
 import planner
 import pdf_export
+import voice_chef
 
 # Streamlit Page Config
 st.set_page_config(
@@ -518,6 +520,16 @@ st.markdown("""
         border-radius: 8px;
         white-space: nowrap;
     }
+
+    /* Audio Player Custom Glassmorphic Styling */
+    audio {
+        width: 100% !important;
+        border-radius: 12px !important;
+        margin-top: 6px !important;
+        margin-bottom: 8px !important;
+        height: 38px !important;
+        filter: drop-shadow(0 4px 10px rgba(124, 58, 237, 0.25));
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -629,6 +641,43 @@ with col_sb2:
         st.session_state.checked_items = set()
         st.toast("Planner reset!", icon="🔄")
         st.rerun()
+
+# ElevenLabs Hands-Free Voice Assistant Settings
+st.sidebar.markdown("---")
+st.sidebar.markdown("### 🎙️ ElevenLabs Voice Chef")
+
+if "elevenlabs_api_key" not in st.session_state:
+    st.session_state.elevenlabs_api_key = os.getenv("ELEVENLABS_API_KEY", "")
+
+elevenlabs_api_key = st.sidebar.text_input(
+    "ElevenLabs API Key",
+    type="password",
+    value=st.session_state.elevenlabs_api_key,
+    key="elevenlabs_api_key_input",
+    help="Enter your ElevenLabs API Key to enable hands-free audio cooking guides and daily meal briefings."
+)
+
+voice_names = list(voice_chef.DEFAULT_VOICES.keys())
+selected_voice_name = st.sidebar.selectbox(
+    "Narrator Voice",
+    options=voice_names,
+    index=0,
+    help="Select the AI voice personality for recipe narration and morning briefings."
+)
+selected_voice_id = voice_chef.DEFAULT_VOICES[selected_voice_name]
+
+if elevenlabs_api_key:
+    st.sidebar.markdown("""
+    <div style="background: rgba(6, 78, 59, 0.4); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 6px 10px; margin-top: 6px;">
+        <span style="color: #34D399; font-size: 0.8rem; font-weight: 600;">🟢 ElevenLabs Voice Active</span>
+    </div>
+    """, unsafe_allow_html=True)
+else:
+    st.sidebar.markdown("""
+    <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 6px 10px; margin-top: 6px;">
+        <span style="color: #94A3B8; font-size: 0.78rem;">💡 Add key to unlock audio chef & morning briefing</span>
+    </div>
+    """, unsafe_allow_html=True)
 
 # Privacy Card in Sidebar
 st.sidebar.markdown("""
@@ -766,6 +815,39 @@ with main_tab1:
             
             with tab:
                 st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+
+                # Daily Audio Briefing Header
+                col_brief_box, col_brief_btn = st.columns([3, 1.2])
+                with col_brief_box:
+                    st.markdown(f"""
+                    <div style="background: rgba(30, 41, 59, 0.45); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 10px 16px; display: flex; align-items: center; gap: 12px;">
+                        <span style="font-size: 1.25rem;">🎙️</span>
+                        <div>
+                            <div style="font-weight: 600; color: #F8FAFC; font-size: 0.9rem;">{day_label} Voice Briefing</div>
+                            <div style="font-size: 0.78rem; color: #94A3B8;">Listen to your morning hands-free culinary preview for {day_label}</div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with col_brief_btn:
+                    st.markdown("<div style='padding-top: 3px;'>", unsafe_allow_html=True)
+                    if st.button(f"▶️ Play Briefing", key=f"btn_briefing_{idx}", type="secondary", use_container_width=True):
+                        if not elevenlabs_api_key:
+                            st.toast("Add your ElevenLabs API Key in the sidebar to enable voice briefings!", icon="🎙️")
+                        else:
+                            with st.spinner("Synthesizing your daily briefing with ElevenLabs..."):
+                                brief_script = voice_chef.build_daily_briefing_script(friend_name, day, allergies_list)
+                                audio_bytes = voice_chef.synthesize_speech(brief_script, api_key=elevenlabs_api_key, voice_id=selected_voice_id)
+                                if audio_bytes:
+                                    st.session_state[f"audio_briefing_{idx}"] = audio_bytes
+                                    st.rerun()
+                                else:
+                                    st.error("Failed to generate audio. Verify your ElevenLabs API key.")
+                    st.markdown("</div>", unsafe_allow_html=True)
+
+                if f"audio_briefing_{idx}" in st.session_state and st.session_state[f"audio_briefing_{idx}"]:
+                    st.audio(st.session_state[f"audio_briefing_{idx}"], format="audio/mp3", autoplay=True)
+
+                st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
                 m1, m2, m3 = st.columns(3)
                 
                 # Breakfast Card (3D Rotatable Flip Card)
@@ -821,6 +903,23 @@ with main_tab1:
                     </div>
                     """, unsafe_allow_html=True)
 
+                    # Breakfast Audio Chef Guide Button
+                    if st.button(f"🔊 Listen to Chef Guide", key=f"audio_btn_b_{idx}", type="secondary", use_container_width=True):
+                        if not elevenlabs_api_key:
+                            st.toast("Add your ElevenLabs API Key in the sidebar for hands-free voice guides!", icon="👨‍🍳")
+                        else:
+                            with st.spinner("Synthesizing kitchen audio guide with ElevenLabs..."):
+                                meal_script = voice_chef.build_recipe_speech_script(b, "Breakfast")
+                                aud_data = voice_chef.synthesize_speech(meal_script, api_key=elevenlabs_api_key, voice_id=selected_voice_id)
+                                if aud_data:
+                                    st.session_state[f"meal_audio_{idx}_b"] = aud_data
+                                    st.rerun()
+                                else:
+                                    st.error("Could not generate audio. Verify your ElevenLabs API key.")
+
+                    if f"meal_audio_{idx}_b" in st.session_state and st.session_state[f"meal_audio_{idx}_b"]:
+                        st.audio(st.session_state[f"meal_audio_{idx}_b"], format="audio/mp3", autoplay=True)
+
                 # Lunch Card (3D Rotatable Flip Card)
                 with m2:
                     l = day.get("lunch", {})
@@ -874,6 +973,23 @@ with main_tab1:
                     </div>
                     """, unsafe_allow_html=True)
 
+                    # Lunch Audio Chef Guide Button
+                    if st.button(f"🔊 Listen to Chef Guide", key=f"audio_btn_l_{idx}", type="secondary", use_container_width=True):
+                        if not elevenlabs_api_key:
+                            st.toast("Add your ElevenLabs API Key in the sidebar for hands-free voice guides!", icon="👨‍🍳")
+                        else:
+                            with st.spinner("Synthesizing kitchen audio guide with ElevenLabs..."):
+                                meal_script = voice_chef.build_recipe_speech_script(l, "Lunch")
+                                aud_data = voice_chef.synthesize_speech(meal_script, api_key=elevenlabs_api_key, voice_id=selected_voice_id)
+                                if aud_data:
+                                    st.session_state[f"meal_audio_{idx}_l"] = aud_data
+                                    st.rerun()
+                                else:
+                                    st.error("Could not generate audio. Verify your ElevenLabs API key.")
+
+                    if f"meal_audio_{idx}_l" in st.session_state and st.session_state[f"meal_audio_{idx}_l"]:
+                        st.audio(st.session_state[f"meal_audio_{idx}_l"], format="audio/mp3", autoplay=True)
+
                 # Dinner Card (3D Rotatable Flip Card)
                 with m3:
                     d = day.get("dinner", {})
@@ -926,6 +1042,23 @@ with main_tab1:
                         </label>
                     </div>
                     """, unsafe_allow_html=True)
+
+                    # Dinner Audio Chef Guide Button
+                    if st.button(f"🔊 Listen to Chef Guide", key=f"audio_btn_d_{idx}", type="secondary", use_container_width=True):
+                        if not elevenlabs_api_key:
+                            st.toast("Add your ElevenLabs API Key in the sidebar for hands-free voice guides!", icon="👨‍🍳")
+                        else:
+                            with st.spinner("Synthesizing kitchen audio guide with ElevenLabs..."):
+                                meal_script = voice_chef.build_recipe_speech_script(d, "Dinner")
+                                aud_data = voice_chef.synthesize_speech(meal_script, api_key=elevenlabs_api_key, voice_id=selected_voice_id)
+                                if aud_data:
+                                    st.session_state[f"meal_audio_{idx}_d"] = aud_data
+                                    st.rerun()
+                                else:
+                                    st.error("Could not generate audio. Verify your ElevenLabs API key.")
+
+                    if f"meal_audio_{idx}_d" in st.session_state and st.session_state[f"meal_audio_{idx}_d"]:
+                        st.audio(st.session_state[f"meal_audio_{idx}_d"], format="audio/mp3", autoplay=True)
 
                 st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
                 
@@ -1012,6 +1145,24 @@ with main_tab2:
                     st.markdown("</div>", unsafe_allow_html=True)
                     
         with c2:
+            st.markdown("#### 🎧 Hands-Free Grocery Audio")
+            if st.button("🎙️ Play Supermarket Audio Run", key="btn_grocery_audio", type="secondary", use_container_width=True):
+                if not elevenlabs_api_key:
+                    st.toast("Add your ElevenLabs API Key in the sidebar to listen to grocery audio!", icon="🛒")
+                else:
+                    with st.spinner("Synthesizing aisle shopping guide with ElevenLabs..."):
+                        g_script = voice_chef.build_shopping_speech_script(friend_name, categorized_shop)
+                        g_audio = voice_chef.synthesize_speech(g_script, api_key=elevenlabs_api_key, voice_id=selected_voice_id)
+                        if g_audio:
+                            st.session_state["grocery_audio"] = g_audio
+                            st.rerun()
+                        else:
+                            st.error("Could not generate audio. Verify your ElevenLabs API key.")
+
+            if "grocery_audio" in st.session_state and st.session_state["grocery_audio"]:
+                st.audio(st.session_state["grocery_audio"], format="audio/mp3", autoplay=True)
+            
+            st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
             st.markdown("#### 📄 Export & Downloads")
             
             # Generate PDFs using pdf_export

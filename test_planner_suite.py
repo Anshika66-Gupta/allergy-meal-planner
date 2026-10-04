@@ -148,6 +148,46 @@ def run_tests():
     assert_test(isinstance(plan_pdf, bytes) and len(plan_pdf) > 1000, "Meal plan PDF generated successfully")
     assert_test(plan_pdf.startswith(b"%PDF"), "Meal plan PDF starts with standard %PDF header")
 
+    # Test 11: ElevenLabs Voice Chef Audio Scripts & Voices
+    import voice_chef
+    assert_test(len(voice_chef.DEFAULT_VOICES) >= 5, "At least 5 curated ElevenLabs voices available")
+    assert_test(voice_chef.DEFAULT_VOICE_ID in voice_chef.DEFAULT_VOICES.values(), "Default voice ID exists in voice map")
+
+    # Recipe speech script
+    test_meal = {
+        "name": "Golden Turmeric Lentil Dahl",
+        "prep_time": "20 mins",
+        "instructions": "1. Rinse red lentils. 2. Simmer with coconut milk and spices until tender.",
+        "chef_tip": "Garnish with freshly chopped cilantro."
+    }
+    recipe_script = voice_chef.build_recipe_speech_script(test_meal, "Dinner")
+    assert_test("Golden Turmeric Lentil Dahl" in recipe_script, "Recipe script includes meal name")
+    assert_test("20 mins" in recipe_script, "Recipe script includes prep time")
+    assert_test("Chef's secret tip" in recipe_script, "Recipe script includes chef tip")
+
+    # Daily briefing script
+    test_day = {
+        "day": "Monday",
+        "breakfast": {"name": "Chia Pudding"},
+        "lunch": {"name": "Quinoa Salad"},
+        "dinner": {"name": "Grilled Chicken"}
+    }
+    briefing_script = voice_chef.build_daily_briefing_script("Anny", test_day, ["Peanuts", "Shellfish"])
+    assert_test("Good morning Anny" in briefing_script, "Briefing script greets user")
+    assert_test("Chia Pudding" in briefing_script and "Grilled Chicken" in briefing_script, "Briefing script covers all meals")
+    assert_test("Peanuts, Shellfish" in briefing_script, "Briefing script confirms allergen safety")
+
+    # Shopping run script
+    test_categories = {
+        "🥬 Produce": ["Spinach", "Tomatoes"],
+        "🍗 Proteins": ["Chicken Breast"]
+    }
+    shopping_script = voice_chef.build_shopping_speech_script("Anny", test_categories)
+    assert_test("3 items to gather today" in shopping_script, "Shopping script counts items accurately")
+
+    # Graceful degradation without API key
+    assert_test(voice_chef.synthesize_speech("Hello", api_key="") is None, "Graceful offline handling when API key is missing")
+
     print(f"\n🎉 ALL {total} TESTS PASSED CLEANLY! (100% SUCCESS)")
 
 if __name__ == "__main__":
