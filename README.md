@@ -110,22 +110,7 @@ Render also supports Docker services using the included `Dockerfile` and `start.
 - Runs local Ollama daemon
 - Automatically binds to `$PORT` without timeout issues
 - Streamlit UI starts immediately
-
----
-
-## 🎥 60–90 Second Demo Video Script
-
-If you are recording a demo video for Anny or your team, follow this fast flow:
-
-1. **0:00 - 0:15 | Intro & The Problem**: 
-   *"This is Anny's Meal Planner. Anny has severe allergies to peanuts, tree nuts, shellfish, and dairy. Planning meals used to cause severe anxiety."*
-2. **0:15 - 0:35 | Load Profile & Generate (< 30s)**:
-   *"We click 'Load Anny's Preset Profile' to lock in her allergies and gluten-free high-protein preferences. We click 'Generate 7-Day Meal Plan'. In seconds, local Gemma generates 21 safe meals across 7 days."*
-3. **0:35 - 0:50 | Regeneration & Shopping List**:
-   *"Notice Day 4 dinner? If Anny wants a different option, she can click 'Regenerate Day 4' to get an instant safe replacement. In Tab 2, an aggregated shopping list organizes ingredients into grocery aisles for easy checkout."*
-4. **0:50 - 0:75 | Why Local AI Matters & Conclusion**:
-   *"Everything runs 100% offline using local Gemma via Ollama. Her health data stays on this laptop, latency is under 30 seconds, and our Python safety audit engine guarantees 100% allergen-free output."*
-
+- 
 ---
 
 ## 🛡️ License
