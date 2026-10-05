@@ -22,6 +22,8 @@ CACHE_DIR = Path(".cache/audio")
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
 
 DEFAULT_VOICES = {
+    "🇮🇳 Anika (Warm & Natural Indian Voice)": "RABOvaPec1ymXz02oDQi",
+    "🇮🇳 Rudra (Clear & Energetic Indian Voice)": "xLm17wfwFDI3GeAaAOZA",
     "Rachel (Warm & Natural)": "21m00Tcm4TlvDq8ikWAM",
     "Adam (Deep & Engaging)": "pNInz6obpgDQGcFmaJgB",
     "Bella (Friendly & Clear)": "EXAVITQu4vr4xnSDxMaL",
@@ -29,7 +31,7 @@ DEFAULT_VOICES = {
     "Charlotte (Elegant & Calm)": "XB0fDUnXU5powFXDhCwa"
 }
 
-DEFAULT_VOICE_ID = "21m00Tcm4TlvDq8ikWAM"  # Rachel
+DEFAULT_VOICE_ID = "RABOvaPec1ymXz02oDQi"  # Anika (Indian accent)
 
 
 def get_api_key(explicit_key: Optional[str] = None) -> Optional[str]:
@@ -43,7 +45,7 @@ def synthesize_speech(
     text: str,
     api_key: Optional[str] = None,
     voice_id: Optional[str] = None,
-    model_id: str = "eleven_turbo_v2_5"
+    model_id: str = "eleven_multilingual_v2"
 ) -> Optional[bytes]:
     """
     Synthesize speech using ElevenLabs API with persistent disk caching.

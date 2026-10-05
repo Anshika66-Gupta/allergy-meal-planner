@@ -289,9 +289,24 @@ st.markdown("""
         display: block;
     }
 
-    .flip-checkbox:checked + .flip-card-inner,
+    /* 1. On Hover: Flip to back to reveal step-by-step instructions */
     .flip-card:hover .flip-card-inner {
         transform: rotateY(180deg);
+    }
+
+    /* 2. On Click while Hovering: Checkbox becomes checked, flipping BACK to front */
+    .flip-card:hover .flip-checkbox:checked + .flip-card-inner {
+        transform: rotateY(0deg) !important;
+    }
+
+    /* 3. Non-hover / touch fallback */
+    .flip-checkbox:checked + .flip-card-inner {
+        transform: rotateY(180deg);
+    }
+
+    /* 4. When mouse leaves, smoothly reset back to front */
+    .flip-card:not(:hover) .flip-card-inner {
+        transform: rotateY(0deg) !important;
     }
 
     .flip-card-front, .flip-card-back {
@@ -521,12 +536,76 @@ st.markdown("""
         white-space: nowrap;
     }
 
+    /* Soundwave Equalizer Playing Animation */
+    @keyframes soundwave-bar-pulse {
+        0%, 100% { height: 4px; }
+        50% { height: 22px; }
+    }
+
+    .soundwave-box {
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        height: 24px;
+        padding: 0 4px;
+        vertical-align: middle;
+    }
+
+    .soundwave-box span {
+        display: inline-block;
+        width: 3px;
+        background: linear-gradient(180deg, #C084FC 0%, #F472B6 100%);
+        border-radius: 3px;
+        animation: soundwave-bar-pulse 1.05s ease-in-out infinite;
+    }
+
+    .soundwave-box span:nth-child(1) { animation-delay: 0.0s; height: 6px; }
+    .soundwave-box span:nth-child(2) { animation-delay: 0.2s; height: 16px; }
+    .soundwave-box span:nth-child(3) { animation-delay: 0.4s; height: 22px; }
+    .soundwave-box span:nth-child(4) { animation-delay: 0.15s; height: 12px; }
+    .soundwave-box span:nth-child(5) { animation-delay: 0.35s; height: 18px; }
+
+    /* Active Audio Studio Card */
+    .audio-studio-card {
+        background: linear-gradient(135deg, rgba(30, 27, 75, 0.85) 0%, rgba(15, 23, 42, 0.92) 100%);
+        border: 1px solid rgba(192, 132, 252, 0.4);
+        border-radius: 14px;
+        padding: 12px 18px;
+        margin-bottom: 14px;
+        box-shadow: 0 8px 24px -6px rgba(124, 58, 237, 0.35);
+        backdrop-filter: blur(14px);
+    }
+
+    .audio-playing-pill {
+        background: linear-gradient(135deg, #7C3AED 0%, #DB2777 100%);
+        color: #FFFFFF;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.05em;
+        padding: 2px 8px;
+        border-radius: 6px;
+    }
+
+    /* Day Ribbon Command Bar */
+    .day-command-ribbon {
+        background: rgba(30, 41, 59, 0.45);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 14px;
+        padding: 10px 16px;
+        margin-bottom: 14px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
     /* Audio Player Custom Glassmorphic Styling */
     audio {
         width: 100% !important;
         border-radius: 12px !important;
-        margin-top: 6px !important;
-        margin-bottom: 8px !important;
+        margin-top: 4px !important;
+        margin-bottom: 4px !important;
         height: 38px !important;
         filter: drop-shadow(0 4px 10px rgba(124, 58, 237, 0.25));
     }
@@ -538,6 +617,8 @@ if "meal_plan" not in st.session_state:
     st.session_state.meal_plan = None
 if "checked_items" not in st.session_state:
     st.session_state.checked_items = set()
+if "active_audio" not in st.session_state:
+    st.session_state.active_audio = None
 if "input_friend_name" not in st.session_state:
     st.session_state.input_friend_name = planner.DEFAULT_FRIEND["name"]
 if "input_allergies" not in st.session_state:
@@ -548,6 +629,21 @@ if "input_preferences" not in st.session_state:
     st.session_state.input_preferences = planner.DEFAULT_FRIEND["preferences"]
 if "input_num_days" not in st.session_state:
     st.session_state.input_num_days = int(planner.DEFAULT_FRIEND["days"])
+
+def set_active_audio(audio_id: str, audio_bytes: bytes, title: str = ""):
+    """Ensure only one soundtrack is active at a time; stops and clears any previous track."""
+    for k in list(st.session_state.keys()):
+        if k.startswith("meal_audio_") or k.startswith("audio_briefing_") or k == "grocery_audio":
+            del st.session_state[k]
+    st.session_state["active_audio"] = {
+        "id": audio_id,
+        "bytes": audio_bytes,
+        "title": title
+    }
+
+def stop_active_audio():
+    """Immediately stop and dismiss the active soundtrack."""
+    st.session_state["active_audio"] = None
 
 # Sidebar Setup & Controls
 st.sidebar.markdown("## ⚙️ Profile & Setup")
@@ -639,45 +735,20 @@ with col_sb2:
     if st.button("🔄 Reset", type="secondary", use_container_width=True):
         st.session_state.meal_plan = None
         st.session_state.checked_items = set()
+        st.session_state.active_audio = None
         st.toast("Planner reset!", icon="🔄")
         st.rerun()
 
-# ElevenLabs Hands-Free Voice Assistant Settings
-st.sidebar.markdown("---")
-st.sidebar.markdown("### 🎙️ ElevenLabs Voice Chef")
-
-if "elevenlabs_api_key" not in st.session_state:
-    st.session_state.elevenlabs_api_key = os.getenv("ELEVENLABS_API_KEY", "")
-
-elevenlabs_api_key = st.sidebar.text_input(
-    "ElevenLabs API Key",
-    type="password",
-    value=st.session_state.elevenlabs_api_key,
-    key="elevenlabs_api_key_input",
-    help="Enter your ElevenLabs API Key to enable hands-free audio cooking guides and daily meal briefings."
+# ElevenLabs Hands-Free Voice Assistant Configuration (Default: 🇮🇳 Anika - Warm & Natural Indian Voice)
+elevenlabs_api_key = voice_chef.get_api_key()
+voice_options = list(voice_chef.DEFAULT_VOICES.keys())
+selected_voice_label = st.sidebar.selectbox(
+    "🎙️ AI Chef Narrator Voice:",
+    options=voice_options,
+    index=0,  # 🇮🇳 Anika (Warm & Natural Indian Voice)
+    help="Select the AI Chef narrator voice and accent. Authentic Indian English accents available!"
 )
-
-voice_names = list(voice_chef.DEFAULT_VOICES.keys())
-selected_voice_name = st.sidebar.selectbox(
-    "Narrator Voice",
-    options=voice_names,
-    index=0,
-    help="Select the AI voice personality for recipe narration and morning briefings."
-)
-selected_voice_id = voice_chef.DEFAULT_VOICES[selected_voice_name]
-
-if elevenlabs_api_key:
-    st.sidebar.markdown("""
-    <div style="background: rgba(6, 78, 59, 0.4); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; padding: 6px 10px; margin-top: 6px;">
-        <span style="color: #34D399; font-size: 0.8rem; font-weight: 600;">🟢 ElevenLabs Voice Active</span>
-    </div>
-    """, unsafe_allow_html=True)
-else:
-    st.sidebar.markdown("""
-    <div style="background: rgba(30, 41, 59, 0.4); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 6px 10px; margin-top: 6px;">
-        <span style="color: #94A3B8; font-size: 0.78rem;">💡 Add key to unlock audio chef & morning briefing</span>
-    </div>
-    """, unsafe_allow_html=True)
+selected_voice_id = voice_chef.DEFAULT_VOICES[selected_voice_label]
 
 # Privacy Card in Sidebar
 st.sidebar.markdown("""
@@ -816,36 +887,93 @@ with main_tab1:
             with tab:
                 st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
 
-                # Daily Audio Briefing Header
-                col_brief_box, col_brief_btn = st.columns([3, 1.2])
-                with col_brief_box:
+                # Unified Day Command Ribbon (Title + Voice Briefing + Re-roll Day)
+                col_ribbon_info, col_ribbon_brief, col_ribbon_regen = st.columns([3, 1.4, 1.3])
+                with col_ribbon_info:
                     st.markdown(f"""
-                    <div style="background: rgba(30, 41, 59, 0.45); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 12px; padding: 10px 16px; display: flex; align-items: center; gap: 12px;">
-                        <span style="font-size: 1.25rem;">🎙️</span>
-                        <div>
-                            <div style="font-weight: 600; color: #F8FAFC; font-size: 0.9rem;">{day_label} Voice Briefing</div>
-                            <div style="font-size: 0.78rem; color: #94A3B8;">Listen to your morning hands-free culinary preview for {day_label}</div>
+                    <div style="padding: 4px 0;">
+                        <span style="font-weight: 700; color: #F8FAFC; font-size: 1.05rem;">🗓️ {day_label} Menu</span>
+                        <div style="color: #94A3B8; font-size: 0.8rem; margin-top: 2px;">
+                            3 safe meals • 🟢 100% allergen-verified
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
-                with col_brief_btn:
-                    st.markdown("<div style='padding-top: 3px;'>", unsafe_allow_html=True)
-                    if st.button(f"▶️ Play Briefing", key=f"btn_briefing_{idx}", type="secondary", use_container_width=True):
-                        if not elevenlabs_api_key:
-                            st.toast("Add your ElevenLabs API Key in the sidebar to enable voice briefings!", icon="🎙️")
-                        else:
-                            with st.spinner("Synthesizing your daily briefing with ElevenLabs..."):
-                                brief_script = voice_chef.build_daily_briefing_script(friend_name, day, allergies_list)
-                                audio_bytes = voice_chef.synthesize_speech(brief_script, api_key=elevenlabs_api_key, voice_id=selected_voice_id)
-                                if audio_bytes:
-                                    st.session_state[f"audio_briefing_{idx}"] = audio_bytes
-                                    st.rerun()
-                                else:
-                                    st.error("Failed to generate audio. Verify your ElevenLabs API key.")
-                    st.markdown("</div>", unsafe_allow_html=True)
 
-                if f"audio_briefing_{idx}" in st.session_state and st.session_state[f"audio_briefing_{idx}"]:
-                    st.audio(st.session_state[f"audio_briefing_{idx}"], format="audio/mp3", autoplay=True)
+                is_briefing_active = (st.session_state.get("active_audio") and st.session_state["active_audio"].get("id") == f"briefing_{idx}")
+                with col_ribbon_brief:
+                    brief_btn_label = "⏹️ Stop Briefing" if is_briefing_active else "🎙️ Daily Briefing"
+                    if st.button(brief_btn_label, key=f"btn_briefing_{idx}", type="primary" if is_briefing_active else "secondary", use_container_width=True):
+                        if is_briefing_active:
+                            stop_active_audio()
+                            st.rerun()
+                        else:
+                            if not elevenlabs_api_key:
+                                st.toast("Add your ELEVENLABS_API_KEY to your .env file to enable voice briefings!", icon="🎙️")
+                            else:
+                                with st.spinner(f"Synthesizing {day_label} briefing with ElevenLabs..."):
+                                    brief_script = voice_chef.build_daily_briefing_script(friend_name, day, allergies_list)
+                                    audio_bytes = voice_chef.synthesize_speech(brief_script, api_key=elevenlabs_api_key, voice_id=selected_voice_id)
+                                    if audio_bytes:
+                                        set_active_audio(f"briefing_{idx}", audio_bytes, f"Daily Voice Briefing ({day_label})")
+                                        st.rerun()
+                                    else:
+                                        st.error("Failed to generate audio. Verify your ElevenLabs API key.")
+
+                with col_ribbon_regen:
+                    if st.button(f"🔄 Re-roll Day", key=f"tab_regen_{idx}", type="secondary", use_container_width=True, help=f"Re-roll all 3 safe meals for {day_label}"):
+                        with st.spinner(f"Re-rolling {day_label} for {friend_name}..."):
+                            existing_meals = [
+                                day.get("breakfast", {}).get("name", ""),
+                                day.get("lunch", {}).get("name", ""),
+                                day.get("dinner", {}).get("name", "")
+                            ]
+                            new_day = planner.regenerate_single_day(
+                                allergies=allergies_list,
+                                preferences=preferences,
+                                day_label=day_label,
+                                model_name=selected_model,
+                                temperature=temperature,
+                                existing_day_meals=existing_meals
+                            )
+                            st.session_state.meal_plan["days"][idx] = new_day
+                            st.session_state.meal_plan = planner.update_shopping_list(st.session_state.meal_plan)
+                            st.toast(f"Regenerated {day_label}!", icon="✨")
+                            st.rerun()
+
+                # Active Audio Studio Player with Soundwave Equalizer (Shows when briefing or any meal is active for this day)
+                active_aud = st.session_state.get("active_audio")
+                if active_aud and (active_aud.get("id") == f"briefing_{idx}" or active_aud.get("id") in [f"meal_{idx}_b", f"meal_{idx}_l", f"meal_{idx}_d"]):
+                    voice_name_clean = selected_voice_label.split(" (")[0].replace("🇮🇳 ", "")
+                    st.markdown(f"""
+                    <div class="audio-studio-card">
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="soundwave-box">
+                                    <span></span><span></span><span></span><span></span><span></span>
+                                </div>
+                                <div>
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="audio-playing-pill">PLAYING</span>
+                                        <span style="font-weight: 700; color: #F8FAFC; font-size: 0.95rem;">{active_aud.get('title', 'Chef Voice Guide')}</span>
+                                    </div>
+                                    <div style="font-size: 0.76rem; color: #C084FC; margin-top: 2px;">
+                                        🎙️ ElevenLabs Kitchen Audio • Narrated by {voice_name_clean} (Indian Accent)
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    c_aud, c_cls = st.columns([6, 1])
+                    with c_aud:
+                        st.audio(active_aud["bytes"], format="audio/mp3", autoplay=True)
+                    with c_cls:
+                        st.markdown("<div style='padding-top: 6px;'>", unsafe_allow_html=True)
+                        if st.button("⏹️ Stop", key=f"studio_stop_{idx}", help="Stop audio narration", use_container_width=True):
+                            stop_active_audio()
+                            st.rerun()
+                        st.markdown("</div>", unsafe_allow_html=True)
 
                 st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
                 m1, m2, m3 = st.columns(3)
@@ -879,7 +1007,7 @@ with main_tab1:
                                     <p style="font-size: 0.82rem; color: #94A3B8; white-space: pre-line; line-height: 1.45; margin: 0;">{b_ingredients}</p>
                                 </div>
                                 <div class="flip-hint-badge">
-                                    🔄 Click or Hover to Flip for Prep Method ➔
+                                    🔄 Hover or Click for Recipe Steps ➔
                                 </div>
                             </div>
                             <div class="flip-card-back">
@@ -896,7 +1024,7 @@ with main_tab1:
                                     </div>
                                 </div>
                                 <div class="flip-hint-badge" style="background:rgba(30,41,59,0.7); color:#94A3B8; border-color:rgba(255,255,255,0.1);">
-                                    ↺ Click to flip back to ingredients
+                                    ↺ Click to Flip Back to Ingredients
                                 </div>
                             </div>
                         </label>
@@ -904,21 +1032,24 @@ with main_tab1:
                     """, unsafe_allow_html=True)
 
                     # Breakfast Audio Chef Guide Button
-                    if st.button(f"🔊 Listen to Chef Guide", key=f"audio_btn_b_{idx}", type="secondary", use_container_width=True):
-                        if not elevenlabs_api_key:
-                            st.toast("Add your ElevenLabs API Key in the sidebar for hands-free voice guides!", icon="👨‍🍳")
+                    is_b_active = (st.session_state.get("active_audio") and st.session_state["active_audio"].get("id") == f"meal_{idx}_b")
+                    b_btn_text = "⏹️ Stop Chef Guide" if is_b_active else "👨‍🍳 Chef Audio Guide"
+                    if st.button(b_btn_text, key=f"audio_btn_b_{idx}", type="primary" if is_b_active else "secondary", use_container_width=True):
+                        if is_b_active:
+                            stop_active_audio()
+                            st.rerun()
                         else:
-                            with st.spinner("Synthesizing kitchen audio guide with ElevenLabs..."):
-                                meal_script = voice_chef.build_recipe_speech_script(b, "Breakfast")
-                                aud_data = voice_chef.synthesize_speech(meal_script, api_key=elevenlabs_api_key, voice_id=selected_voice_id)
-                                if aud_data:
-                                    st.session_state[f"meal_audio_{idx}_b"] = aud_data
-                                    st.rerun()
-                                else:
-                                    st.error("Could not generate audio. Verify your ElevenLabs API key.")
-
-                    if f"meal_audio_{idx}_b" in st.session_state and st.session_state[f"meal_audio_{idx}_b"]:
-                        st.audio(st.session_state[f"meal_audio_{idx}_b"], format="audio/mp3", autoplay=True)
+                            if not elevenlabs_api_key:
+                                st.toast("Add your ELEVENLABS_API_KEY to your .env file for hands-free voice guides!", icon="👨‍🍳")
+                            else:
+                                with st.spinner("Synthesizing kitchen audio guide with ElevenLabs..."):
+                                    meal_script = voice_chef.build_recipe_speech_script(b, "Breakfast")
+                                    aud_data = voice_chef.synthesize_speech(meal_script, api_key=elevenlabs_api_key, voice_id=selected_voice_id)
+                                    if aud_data:
+                                        set_active_audio(f"meal_{idx}_b", aud_data, f"Breakfast: {b_name}")
+                                        st.rerun()
+                                    else:
+                                        st.error("Could not generate audio. Verify your ElevenLabs API key.")
 
                 # Lunch Card (3D Rotatable Flip Card)
                 with m2:
@@ -949,7 +1080,7 @@ with main_tab1:
                                     <p style="font-size: 0.82rem; color: #94A3B8; white-space: pre-line; line-height: 1.45; margin: 0;">{l_ingredients}</p>
                                 </div>
                                 <div class="flip-hint-badge">
-                                    🔄 Click or Hover to Flip for Prep Method ➔
+                                    🔄 Hover or Click for Recipe Steps ➔
                                 </div>
                             </div>
                             <div class="flip-card-back">
@@ -966,7 +1097,7 @@ with main_tab1:
                                     </div>
                                 </div>
                                 <div class="flip-hint-badge" style="background:rgba(30,41,59,0.7); color:#94A3B8; border-color:rgba(255,255,255,0.1);">
-                                    ↺ Click to flip back to ingredients
+                                    ↺ Click to Flip Back to Ingredients
                                 </div>
                             </div>
                         </label>
@@ -974,21 +1105,24 @@ with main_tab1:
                     """, unsafe_allow_html=True)
 
                     # Lunch Audio Chef Guide Button
-                    if st.button(f"🔊 Listen to Chef Guide", key=f"audio_btn_l_{idx}", type="secondary", use_container_width=True):
-                        if not elevenlabs_api_key:
-                            st.toast("Add your ElevenLabs API Key in the sidebar for hands-free voice guides!", icon="👨‍🍳")
+                    is_l_active = (st.session_state.get("active_audio") and st.session_state["active_audio"].get("id") == f"meal_{idx}_l")
+                    l_btn_text = "⏹️ Stop Chef Guide" if is_l_active else "👨‍🍳 Chef Audio Guide"
+                    if st.button(l_btn_text, key=f"audio_btn_l_{idx}", type="primary" if is_l_active else "secondary", use_container_width=True):
+                        if is_l_active:
+                            stop_active_audio()
+                            st.rerun()
                         else:
-                            with st.spinner("Synthesizing kitchen audio guide with ElevenLabs..."):
-                                meal_script = voice_chef.build_recipe_speech_script(l, "Lunch")
-                                aud_data = voice_chef.synthesize_speech(meal_script, api_key=elevenlabs_api_key, voice_id=selected_voice_id)
-                                if aud_data:
-                                    st.session_state[f"meal_audio_{idx}_l"] = aud_data
-                                    st.rerun()
-                                else:
-                                    st.error("Could not generate audio. Verify your ElevenLabs API key.")
-
-                    if f"meal_audio_{idx}_l" in st.session_state and st.session_state[f"meal_audio_{idx}_l"]:
-                        st.audio(st.session_state[f"meal_audio_{idx}_l"], format="audio/mp3", autoplay=True)
+                            if not elevenlabs_api_key:
+                                st.toast("Add your ELEVENLABS_API_KEY to your .env file for hands-free voice guides!", icon="👨‍🍳")
+                            else:
+                                with st.spinner("Synthesizing kitchen audio guide with ElevenLabs..."):
+                                    meal_script = voice_chef.build_recipe_speech_script(l, "Lunch")
+                                    aud_data = voice_chef.synthesize_speech(meal_script, api_key=elevenlabs_api_key, voice_id=selected_voice_id)
+                                    if aud_data:
+                                        set_active_audio(f"meal_{idx}_l", aud_data, f"Lunch: {l_name}")
+                                        st.rerun()
+                                    else:
+                                        st.error("Could not generate audio. Verify your ElevenLabs API key.")
 
                 # Dinner Card (3D Rotatable Flip Card)
                 with m3:
@@ -1019,7 +1153,7 @@ with main_tab1:
                                     <p style="font-size: 0.82rem; color: #94A3B8; white-space: pre-line; line-height: 1.45; margin: 0;">{d_ingredients}</p>
                                 </div>
                                 <div class="flip-hint-badge">
-                                    🔄 Click or Hover to Flip for Prep Method ➔
+                                    🔄 Hover or Click for Recipe Steps ➔
                                 </div>
                             </div>
                             <div class="flip-card-back">
@@ -1036,7 +1170,7 @@ with main_tab1:
                                     </div>
                                 </div>
                                 <div class="flip-hint-badge" style="background:rgba(30,41,59,0.7); color:#94A3B8; border-color:rgba(255,255,255,0.1);">
-                                    ↺ Click to flip back to ingredients
+                                    ↺ Click to Flip Back to Ingredients
                                 </div>
                             </div>
                         </label>
@@ -1044,53 +1178,24 @@ with main_tab1:
                     """, unsafe_allow_html=True)
 
                     # Dinner Audio Chef Guide Button
-                    if st.button(f"🔊 Listen to Chef Guide", key=f"audio_btn_d_{idx}", type="secondary", use_container_width=True):
-                        if not elevenlabs_api_key:
-                            st.toast("Add your ElevenLabs API Key in the sidebar for hands-free voice guides!", icon="👨‍🍳")
-                        else:
-                            with st.spinner("Synthesizing kitchen audio guide with ElevenLabs..."):
-                                meal_script = voice_chef.build_recipe_speech_script(d, "Dinner")
-                                aud_data = voice_chef.synthesize_speech(meal_script, api_key=elevenlabs_api_key, voice_id=selected_voice_id)
-                                if aud_data:
-                                    st.session_state[f"meal_audio_{idx}_d"] = aud_data
-                                    st.rerun()
-                                else:
-                                    st.error("Could not generate audio. Verify your ElevenLabs API key.")
-
-                    if f"meal_audio_{idx}_d" in st.session_state and st.session_state[f"meal_audio_{idx}_d"]:
-                        st.audio(st.session_state[f"meal_audio_{idx}_d"], format="audio/mp3", autoplay=True)
-
-                st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
-                
-                # Single Day Balanced Regeneration Row
-                col_day_info, col_day_act = st.columns([3, 1])
-                with col_day_info:
-                    st.markdown(f"""
-                    <div style="padding: 6px 0;">
-                        <span style="font-weight: 600; color: #E2E8F0; font-size: 0.95rem;">🔄 Want different meals for {day_label}?</span>
-                        <div style="color: #94A3B8; font-size: 0.84rem; margin-top: 2px;">Re-roll all 3 safe meals for this day while keeping the rest of your week untouched.</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                with col_day_act:
-                    if st.button(f"Regenerate {day_label}", key=f"tab_regen_{idx}", type="secondary", use_container_width=True):
-                        with st.spinner(f"Re-rolling {day_label} for {friend_name}..."):
-                            existing_meals = [
-                                day.get("breakfast", {}).get("name", ""),
-                                day.get("lunch", {}).get("name", ""),
-                                day.get("dinner", {}).get("name", "")
-                            ]
-                            new_day = planner.regenerate_single_day(
-                                allergies=allergies_list,
-                                preferences=preferences,
-                                day_label=day_label,
-                                model_name=selected_model,
-                                temperature=temperature,
-                                existing_day_meals=existing_meals
-                            )
-                            st.session_state.meal_plan["days"][idx] = new_day
-                            st.session_state.meal_plan = planner.update_shopping_list(st.session_state.meal_plan)
-                            st.toast(f"Regenerated {day_label}!", icon="✨")
+                    is_d_active = (st.session_state.get("active_audio") and st.session_state["active_audio"].get("id") == f"meal_{idx}_d")
+                    d_btn_text = "⏹️ Stop Chef Guide" if is_d_active else "👨‍🍳 Chef Audio Guide"
+                    if st.button(d_btn_text, key=f"audio_btn_d_{idx}", type="primary" if is_d_active else "secondary", use_container_width=True):
+                        if is_d_active:
+                            stop_active_audio()
                             st.rerun()
+                        else:
+                            if not elevenlabs_api_key:
+                                st.toast("Add your ELEVENLABS_API_KEY to your .env file for hands-free voice guides!", icon="👨‍🍳")
+                            else:
+                                with st.spinner("Synthesizing kitchen audio guide with ElevenLabs..."):
+                                    meal_script = voice_chef.build_recipe_speech_script(d, "Dinner")
+                                    aud_data = voice_chef.synthesize_speech(meal_script, api_key=elevenlabs_api_key, voice_id=selected_voice_id)
+                                    if aud_data:
+                                        set_active_audio(f"meal_{idx}_d", aud_data, f"Dinner: {d_name}")
+                                        st.rerun()
+                                    else:
+                                        st.error("Could not generate audio. Verify your ElevenLabs API key.")
 
 # TAB 2: SHOPPING LIST (WITH AISLE CATEGORIZATION, PROGRESS & DOWNLOADS)
 with main_tab2:
@@ -1146,21 +1251,35 @@ with main_tab2:
                     
         with c2:
             st.markdown("#### 🎧 Hands-Free Grocery Audio")
-            if st.button("🎙️ Play Supermarket Audio Run", key="btn_grocery_audio", type="secondary", use_container_width=True):
-                if not elevenlabs_api_key:
-                    st.toast("Add your ElevenLabs API Key in the sidebar to listen to grocery audio!", icon="🛒")
+            is_grocery_active = (st.session_state.get("active_audio") and st.session_state["active_audio"].get("id") == "grocery")
+            g_btn_text = "⏹️ Stop Grocery Audio" if is_grocery_active else "🎙️ Play Supermarket Audio Run"
+            if st.button(g_btn_text, key="btn_grocery_audio", type="primary" if is_grocery_active else "secondary", use_container_width=True):
+                if is_grocery_active:
+                    stop_active_audio()
+                    st.rerun()
                 else:
-                    with st.spinner("Synthesizing aisle shopping guide with ElevenLabs..."):
-                        g_script = voice_chef.build_shopping_speech_script(friend_name, categorized_shop)
-                        g_audio = voice_chef.synthesize_speech(g_script, api_key=elevenlabs_api_key, voice_id=selected_voice_id)
-                        if g_audio:
-                            st.session_state["grocery_audio"] = g_audio
-                            st.rerun()
-                        else:
-                            st.error("Could not generate audio. Verify your ElevenLabs API key.")
+                    if not elevenlabs_api_key:
+                        st.toast("Add your ELEVENLABS_API_KEY to your .env file to listen to grocery audio!", icon="🛒")
+                    else:
+                        with st.spinner("Synthesizing aisle shopping guide with ElevenLabs..."):
+                            g_script = voice_chef.build_shopping_speech_script(friend_name, categorized_shop)
+                            g_audio = voice_chef.synthesize_speech(g_script, api_key=elevenlabs_api_key, voice_id=selected_voice_id)
+                            if g_audio:
+                                set_active_audio("grocery", g_audio, f"Grocery Audio Run for {friend_name}")
+                                st.rerun()
+                            else:
+                                st.error("Could not generate audio. Verify your ElevenLabs API key.")
 
-            if "grocery_audio" in st.session_state and st.session_state["grocery_audio"]:
-                st.audio(st.session_state["grocery_audio"], format="audio/mp3", autoplay=True)
+            if is_grocery_active:
+                st.markdown("""
+                <div style="display: flex; align-items: center; gap: 8px; margin: 8px 0 4px 0;">
+                    <div class="soundwave-box">
+                        <span></span><span></span><span></span><span></span><span></span>
+                    </div>
+                    <span style="font-size: 0.8rem; color: #C084FC; font-weight: 600;">Supermarket Run Audio Playing...</span>
+                </div>
+                """, unsafe_allow_html=True)
+                st.audio(st.session_state["active_audio"]["bytes"], format="audio/mp3", autoplay=True)
             
             st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
             st.markdown("#### 📄 Export & Downloads")
@@ -1280,7 +1399,7 @@ with main_tab3:
         <span class="timeline-badge">0:00 - 0:15</span>
         <div>
             <strong style="color: #F8FAFC;">The Problem & Urgency:</strong>
-            <span style="color: #CBD5E1;"> Introduce Anny, who has life-threatening allergies to Peanuts, Tree Nuts, Shellfish, and Dairy. Explain the anxiety of meal planning and accidental cross-contamination.</span>
+            <span style="color: #CBD5E1;"> Introduce Anny, who has severe allergies to Peanuts, Tree Nuts, Shellfish, and Dairy. Explain the anxiety of meal planning and accidental cross-contamination.</span>
         </div>
     </div>
 
@@ -1288,23 +1407,23 @@ with main_tab3:
         <span class="timeline-badge">0:15 - 0:35</span>
         <div>
             <strong style="color: #F8FAFC;">One-Click Generation:</strong>
-            <span style="color: #CBD5E1;"> Click <em>⚡ Load Anny's Preset Profile</em>, show the strict exclusions automatically populate, and click <em>✨ Generate Plan</em>. Highlight 21 distinct safe meals across 7 days.</span>
+            <span style="color: #CBD5E1;"> Click <em>⚡ Load Anny's Preset Profile</em>, show the strict exclusions populate, and click <em>✨ Generate Plan</em>. Highlight diverse safe meals across all selected days.</span>
         </div>
     </div>
 
     <div class="timeline-step">
         <span class="timeline-badge">0:35 - 0:50</span>
         <div>
-            <strong style="color: #F8FAFC;">Interactive 3D Cards & Shopping:</strong>
-            <span style="color: #CBD5E1;"> Hover and click the 3D rotatable cards to view step-by-step cooking guides. Click <em>🔄 Regenerate Tuesday</em> to demonstrate real-time single-day re-rolling. Switch to the <em>Consolidated Shopping List</em> to show aisle categorization and PDF download.</span>
+            <strong style="color: #F8FAFC;">Interactive 3D Cards & ElevenLabs Audio:</strong>
+            <span style="color: #CBD5E1;"> Hover and click the 3D rotatable cards to view step-by-step cooking guides. Play the hands-free Indian accent Chef Voice Guide and morning briefing. Re-roll any single day with one click.</span>
         </div>
     </div>
 
     <div class="timeline-step">
         <span class="timeline-badge">0:50 - 0:75</span>
         <div>
-            <strong style="color: #F8FAFC;">The Local AI Advantage:</strong>
-            <span style="color: #CBD5E1;"> Highlight 100% offline privacy, zero API costs, sub-second latency, and the Deterministic Allergen Audit Log guaranteeing zero accidental exposure.</span>
+            <strong style="color: #F8FAFC;">Consolidated Shopping & Safety Guarantee:</strong>
+            <span style="color: #CBD5E1;"> Switch to the <em>Consolidated Shopping List</em> for aisle checklists, grocery audio run, and one-click PDF downloads. Highlight 100% offline privacy and deterministic allergen safety log.</span>
         </div>
     </div>
     """, unsafe_allow_html=True)

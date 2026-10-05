@@ -13,7 +13,7 @@ def clean_pdf_text(text: str) -> str:
     # Strip common emojis and non-standard symbols
     emojis_and_symbols = [
         "🥬", "🍗", "🥛", "🌾", "🥜", "🧂", "🥣", "🥗", "🍲", "⏱️", "👨‍🍳",
-        "🚫", "✅", "🛡️", "🟢", "⚡", "❤️", "🔒", "📋", "📦", "📄", "🎉",
+        "🚫", "✅", "🛡️", "🟢", "⚡", "", "🔒", "📋", "📦", "📄", "🎉",
         "✨", "🗓️", "🛒", "🔄", "⚙️", "💡", "🔍", "⏱"
     ]
     for sym in emojis_and_symbols:
